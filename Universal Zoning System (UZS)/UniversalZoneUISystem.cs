@@ -1,0 +1,476 @@
+using System;
+using System.Collections.Generic;
+using Colossal.Logging;
+using Game;
+using Game.Prefabs;
+using Game.SceneFlow;
+using Game.Zones;
+using Unity.Collections;
+using Unity.Entities;
+using UnityEngine;
+
+namespace UniversalZoningSystem
+{
+    /// <summary>
+    /// System that creates and registers universal zone prefabs with a custom category in the zone toolbar.
+    /// 
+    /// Based on StarQ's Asset UI Manager approach:
+    /// 1. Create UIAssetCategoryPrefab with proper m_Menu reference
+    /// 2. Add UIObject component with icon and priority
+    /// 3. Register with PrefabSystem
+    /// 4. Add zones to category via UIGroupElement buffer
+    /// 
+    /// Key: Must run during OnGamePreload to be picked up by the UI system.
+    /// </summary>
+    public partial class UniversalZoneUISystem : GameSystemBase
+    {
+        private static readonly ILog Log = Mod.Log;
+
+        private PrefabSystem _prefabSystem;
+        private EntityQuery _zoneQuery;
+        private EntityQuery _menuQuery;
+        private bool _initialized;
+
+        // Created universal zone prefabs and their entities
+        private readonly List<ZonePrefab> _createdZonePrefabs = new List<ZonePrefab>();
+        private readonly Dictionary<string, Entity> _universalZoneEntities = new Dictionary<string, Entity>();
+
+        // Template zones we clone from (keyed by zone type)
+        private readonly Dictionary<ZoneType, ZonePrefab> _templateZones = new Dictionary<ZoneType, ZonePrefab>();
+        private readonly Dictionary<ZoneType, Entity> _templateZoneEntities = new Dictionary<ZoneType, Entity>();
+
+        // Our custom UI category for universal zones
+        private UIAssetCategoryPrefab _universalZoneCategory;
+        private Entity _universalZoneCategoryEntity;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            _prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+
+            _zoneQuery = GetEntityQuery(
+                ComponentType.ReadOnly<ZoneData>(),
+                ComponentType.ReadOnly<PrefabData>()
+            );
+
+            _menuQuery = GetEntityQuery(
+                ComponentType.ReadOnly<UIAssetMenuData>(),
+                ComponentType.ReadOnly<PrefabData>()
+            );
+
+            Log.Info("UniversalZoneUISystem created.");
+        }
+
+        /// <summary>
+        /// Called during game preload - this is when StarQ's mod runs its UI creation.
+        /// This happens BEFORE the main game UI is built.
+        /// </summary>
+        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGamePreload(purpose, mode);
+            
+            Log.Info($"OnGamePreload called: Purpose={purpose}, Mode={mode}");
+            
+            // Only run in game mode
+            if (!mode.IsGameOrEditor())
+                return;
+
+            InitializeUniversalZones();
+        }
+
+        protected override void OnUpdate()
+        {
+            // Fallback: if OnGamePreload didn't run, try here
+            if (!_initialized)
+            {
+                // Wait until zone prefabs and menus are loaded
+                if (_zoneQuery.IsEmptyIgnoreFilter || _menuQuery.IsEmptyIgnoreFilter)
+                    return;
+
+                InitializeUniversalZones();
+            }
+        }
+
+        private void InitializeUniversalZones()
+        {
+            if (_initialized)
+                return;
+
+            try
+            {
+                Log.Info("=== Starting Universal Zone UI Creation ===");
+
+                // Step 1: Find template zones for each type
+                FindTemplateZones();
+
+                if (_templateZones.Count == 0)
+                {
+                    Log.Info("No templates found yet, waiting...");
+                    return;
+                }
+
+                // Step 2: Create our custom UI category (following StarQ's approach)
+                CreateUniversalZoneCategory();
+
+                // Step 3: Create universal zone prefabs in our category
+                CreateUniversalZonePrefabs();
+
+                // Step 4: Add zones to category buffer
+                AddZonesToCategoryBuffer();
+
+                _initialized = true;
+                Log.Info("=== Universal Zone UI Creation Complete ===");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to initialize Universal Zone UI: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        private void FindTemplateZones()
+        {
+            var zoneEntities = _zoneQuery.ToEntityArray(Allocator.Temp);
+            Log.Info($"Searching through {zoneEntities.Length} zone entities for templates...");
+
+            try
+            {
+                foreach (var entity in zoneEntities)
+                {
+                    if (!_prefabSystem.TryGetPrefab<ZonePrefab>(entity, out var zonePrefab))
+                        continue;
+
+                    var classification = UniversalZonePrefabSystem.GetZoneClassification(zonePrefab.name);
+                    if (classification == null)
+                        continue;
+
+                    // Prefer NA or EU templates
+                    bool shouldUse = !_templateZones.ContainsKey(classification.ZoneType);
+                    if (!shouldUse && (zonePrefab.name.StartsWith("NA ") || zonePrefab.name.StartsWith("EU ")))
+                        shouldUse = true;
+
+                    if (shouldUse)
+                    {
+                        _templateZones[classification.ZoneType] = zonePrefab;
+                        _templateZoneEntities[classification.ZoneType] = entity;
+                        Log.Info($"Template for {classification.ZoneType}: {zonePrefab.name}");
+                    }
+                }
+            }
+            finally
+            {
+                zoneEntities.Dispose();
+            }
+
+            Log.Info($"Found {_templateZones.Count} zone templates.");
+        }
+
+        private void CreateUniversalZoneCategory()
+        {
+            // Find the Zones menu
+            Entity zonesMenuEntity = Entity.Null;
+            UIAssetMenuPrefab zonesMenuPrefab = null;
+            
+            var menuEntities = _menuQuery.ToEntityArray(Allocator.Temp);
+            try
+            {
+                foreach (var entity in menuEntities)
+                {
+                    if (!_prefabSystem.TryGetPrefab<UIAssetMenuPrefab>(entity, out var menuPrefab))
+                        continue;
+
+                    if (menuPrefab.name == "Zones")
+                    {
+                        zonesMenuEntity = entity;
+                        zonesMenuPrefab = menuPrefab;
+                        Log.Info($"Found Zones menu: {menuPrefab.name} (Entity: {entity.Index})");
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                menuEntities.Dispose();
+            }
+
+            if (zonesMenuPrefab == null)
+            {
+                Log.Warn("Could not find Zones menu!");
+                return;
+            }
+
+            // Check if category already exists
+            if (_prefabSystem.TryGetPrefab(new PrefabID("UIAssetCategoryPrefab", "ZonesUniversal"), out PrefabBase existingTab))
+            {
+                Log.Info("Universal Zones category already exists, reusing...");
+                _universalZoneCategory = existingTab as UIAssetCategoryPrefab;
+                _prefabSystem.TryGetEntity(_universalZoneCategory, out _universalZoneCategoryEntity);
+                return;
+            }
+
+            // Create a new UIAssetCategoryPrefab (following StarQ's approach)
+            _universalZoneCategory = ScriptableObject.CreateInstance<UIAssetCategoryPrefab>();
+            _universalZoneCategory.name = "ZonesUniversal";
+            
+            // Set the parent menu
+            _universalZoneCategory.m_Menu = zonesMenuPrefab;
+
+            // Add UIObject component for the tab icon and priority
+            var uiObject = _universalZoneCategory.AddComponent<UIObject>();
+            uiObject.m_Icon = "Media/Game/Icons/Zones.svg"; // Use zones icon for now
+            uiObject.m_Priority = 100; // After other zone categories
+            uiObject.active = true;
+            uiObject.m_IsDebugObject = false;
+            uiObject.m_Group = null; // Top-level category, no parent group
+
+            // Register with prefab system
+            _prefabSystem.AddPrefab(_universalZoneCategory);
+            
+            // Get the entity
+            _prefabSystem.TryGetEntity(_universalZoneCategory, out _universalZoneCategoryEntity);
+
+            Log.Info($"Created Universal Zones category:");
+            Log.Info($"  Name: {_universalZoneCategory.name}");
+            Log.Info($"  Menu: {_universalZoneCategory.m_Menu?.name ?? "null"}");
+            Log.Info($"  Icon: {uiObject.m_Icon}");
+            Log.Info($"  Priority: {uiObject.m_Priority}");
+            Log.Info($"  Entity: {_universalZoneCategoryEntity.Index}");
+        }
+
+        private void CreateUniversalZonePrefabs()
+        {
+            // Check if prefabs already exist
+            if (_createdZonePrefabs.Count > 0)
+            {
+                Log.Info("Universal zone prefabs already created, skipping...");
+                return;
+            }
+
+            int priority = 0;
+            foreach (var definition in ZoneDefinitions.AllZones)
+            {
+                // Check if this zone already exists
+                if (_prefabSystem.TryGetPrefab(new PrefabID("ZonePrefab", definition.Id), out _))
+                {
+                    Log.Info($"Zone {definition.Id} already exists, skipping...");
+                    continue;
+                }
+                
+                // Check if we have a template for this zone type
+                var primaryType = definition.SourceZoneTypes[0];
+                if (!_templateZones.ContainsKey(primaryType))
+                {
+                    Log.Info($"No template for {definition.Id} (type: {primaryType}), skipping...");
+                    continue;
+                }
+                
+                if (CreateUniversalZonePrefab(definition, priority))
+                {
+                    priority++; // Only increment on success
+                }
+            }
+
+            Log.Info($"Created {_createdZonePrefabs.Count} universal zone prefabs.");
+        }
+
+        private bool CreateUniversalZonePrefab(UniversalZoneDefinition definition, int priority)
+        {
+            var primaryType = definition.SourceZoneTypes[0];
+
+            if (!_templateZones.TryGetValue(primaryType, out var templateZone))
+            {
+                Log.Warn($"No template zone found for {definition.Name} (type: {primaryType})");
+                return false;
+            }
+
+            if (!_templateZoneEntities.TryGetValue(primaryType, out var templateEntity))
+            {
+                Log.Warn($"No template entity found for {definition.Name}");
+                return false;
+            }
+
+            try
+            {
+                // CLONE the entire template zone prefab
+                var universalZone = UnityEngine.Object.Instantiate(templateZone);
+                universalZone.name = definition.Id;
+
+                // Update the UIObject to use our custom category
+                var uiObject = universalZone.GetComponent<UIObject>();
+                if (uiObject != null && _universalZoneCategoryEntity != Entity.Null)
+                {
+                    uiObject.m_Group = _universalZoneCategory;
+                    uiObject.m_Priority = priority;
+                    
+                    Log.Info($"  {definition.Id}: Priority={priority}");
+                }
+
+                // Remove ThemeObject component so the zone appears in all themes
+                var themeObject = universalZone.GetComponent<ThemeObject>();
+                if (themeObject != null)
+                {
+                    universalZone.components.Remove(themeObject);
+                    UnityEngine.Object.Destroy(themeObject);
+                    Log.Info($"  Removed ThemeObject from {definition.Id}");
+                }
+
+                // Register with the prefab system
+                _prefabSystem.AddPrefab(universalZone);
+                _createdZonePrefabs.Add(universalZone);
+
+                // Get the entity
+                var entity = _prefabSystem.GetEntity(universalZone);
+                if (entity != Entity.Null)
+                {
+                    _universalZoneEntities[definition.Id] = entity;
+                    
+                    // Log template ZoneData
+                    if (EntityManager.HasComponent<ZoneData>(templateEntity))
+                    {
+                        var templateZoneData = EntityManager.GetComponentData<ZoneData>(templateEntity);
+                        Log.Info($"  Template ZoneData: AreaType={templateZoneData.m_AreaType}, ZoneType={templateZoneData.m_ZoneType}, ZoneFlags={templateZoneData.m_ZoneFlags}");
+                        
+                        // Check if our entity has ZoneData
+                        if (EntityManager.HasComponent<ZoneData>(entity))
+                        {
+                            var currentZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                            Log.Info($"  Current ZoneData: AreaType={currentZoneData.m_AreaType}, ZoneType={currentZoneData.m_ZoneType}, ZoneFlags={currentZoneData.m_ZoneFlags}");
+                            
+                            // Copy the zone data from template
+                            EntityManager.SetComponentData(entity, templateZoneData);
+                            Log.Info($"  Copied ZoneData to entity");
+                        }
+                        else
+                        {
+                            Log.Warn($"  Entity {entity.Index} does not have ZoneData component!");
+                        }
+                    }
+                    else
+                    {
+                        Log.Warn($"  Template entity {templateEntity.Index} does not have ZoneData!");
+                    }
+
+                    // Remove theme-related components from the entity as well
+                    if (EntityManager.HasComponent<ThemeData>(entity))
+                    {
+                        EntityManager.RemoveComponent<ThemeData>(entity);
+                        Log.Info($"  Removed ThemeData component from entity {entity.Index}");
+                    }
+                    
+                    Log.Info($"Created universal zone: {definition.Name} (Entity: {entity.Index})");
+                    return true;
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to create universal zone {definition.Name}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void AddZonesToCategoryBuffer()
+        {
+            if (_universalZoneCategoryEntity == Entity.Null)
+            {
+                Log.Warn("Cannot add zones to buffer - category entity is null");
+                return;
+            }
+
+            // Add the category to the Zones menu's UIGroupElement buffer
+            // This is needed because just setting m_Menu isn't enough for runtime-created categories
+            AddCategoryToMenuBuffer();
+            
+            Log.Info($"Created {_universalZoneEntities.Count} universal zones (registered via UIObject.m_Group)");
+        }
+
+        private void AddCategoryToMenuBuffer()
+        {
+            // Find the Zones menu entity
+            var menuEntities = _menuQuery.ToEntityArray(Allocator.Temp);
+            try
+            {
+                foreach (var menuEntity in menuEntities)
+                {
+                    if (!_prefabSystem.TryGetPrefab<UIAssetMenuPrefab>(menuEntity, out var menuPrefab))
+                        continue;
+
+                    if (menuPrefab.name != "Zones")
+                        continue;
+
+                    // Add our category to the menu's UIGroupElement buffer
+                    if (!EntityManager.HasBuffer<UIGroupElement>(menuEntity))
+                    {
+                        Log.Warn("Zones menu doesn't have UIGroupElement buffer");
+                        continue;
+                    }
+
+                    var menuBuffer = EntityManager.GetBuffer<UIGroupElement>(menuEntity);
+                    
+                    // Check if already added
+                    bool alreadyAdded = false;
+                    for (int i = 0; i < menuBuffer.Length; i++)
+                    {
+                        if (menuBuffer[i].m_Prefab == _universalZoneCategoryEntity)
+                        {
+                            alreadyAdded = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyAdded)
+                    {
+                        menuBuffer.Add(new UIGroupElement(_universalZoneCategoryEntity));
+                        Log.Info($"Added ZonesUniversal category to Zones menu buffer (total items: {menuBuffer.Length})");
+                    }
+                    else
+                    {
+                        Log.Info("ZonesUniversal category already in Zones menu buffer");
+                    }
+
+                    break;
+                }
+            }
+            finally
+            {
+                menuEntities.Dispose();
+            }
+        }
+
+        public Entity GetUniversalZoneEntity(string definitionId)
+        {
+            return _universalZoneEntities.TryGetValue(definitionId, out var entity) ? entity : Entity.Null;
+        }
+
+        public ZonePrefab GetUniversalZonePrefab(string definitionId)
+        {
+            foreach (var prefab in _createdZonePrefabs)
+            {
+                if (prefab.name == definitionId)
+                    return prefab;
+            }
+            return null;
+        }
+
+        public IReadOnlyList<ZonePrefab> CreatedZonePrefabs => _createdZonePrefabs;
+
+        protected override void OnDestroy()
+        {
+            foreach (var prefab in _createdZonePrefabs)
+            {
+                if (prefab != null)
+                    UnityEngine.Object.Destroy(prefab);
+            }
+            
+            if (_universalZoneCategory != null)
+                UnityEngine.Object.Destroy(_universalZoneCategory);
+
+            _createdZonePrefabs.Clear();
+            _templateZones.Clear();
+            _templateZoneEntities.Clear();
+            _universalZoneEntities.Clear();
+
+            base.OnDestroy();
+        }
+    }
+}
