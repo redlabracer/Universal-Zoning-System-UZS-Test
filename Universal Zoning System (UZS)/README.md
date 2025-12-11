@@ -1,209 +1,108 @@
-# Universal Zoning System (UZS)
+﻿# Universal Zoning System (UZS)
 
-A Cities: Skylines II mod that creates universal zone types drawing buildings from all regional content packs for truly diverse cityscapes.
+This is a mod enabling **universal zoning** in Cities: Skylines II, allowing buildings from all regional content packs to spawn in unified zone types.
 
-## Features
+**Now in ALPHA TESTING stage: Volunteers needed!**
 
-- **10 Universal Zone Types**: Available in a custom UI panel within the zone tool
-- **Multi-Region Building Pool**: Draws from NA, EU, UK, Germany, France, Netherlands, Eastern Europe, Japan, China, and more
-- **Configurable Regions**: Enable/disable specific regions in settings
-- **Custom UI Panel**: Universal zones appear in a dedicated panel when using the zone tool
-- **Performance Optimized**: Near-instant initialization with minimal memory footprint
-- **DLC-Aware**: Automatically incorporates buildings from installed DLCs
-- **PDX Mods Compatible**: Uses the official modding API
+The goal is to create diverse, multi-cultural cities by mixing architectural styles from North America, Europe, Japan, China, and more - all within a single zone.
+The mod is inspired by the desire to build realistic cosmopolitan cities without being locked into regional building styles.
+
+## General Info
+
+- Adds **10 Universal Zone Types** to the game, available in the Zones menu under a "Universal" category
+- Universal zones combine buildings from ALL installed regional content packs
+- Buildings still follow vanilla spawning rules (demand, land value, pollution, desirability)
+- Original EU/NA zones remain fully functional and unchanged
+- Enable/disable specific regions through mod settings
+- PDX Mods compatible - no Harmony patches required
+
+### Universal Zone Types
+
+| Zone | Description |
+|------|-------------|
+| **Universal Low Residential** | Single-family homes from all regions - American suburbs, European villas, Japanese houses |
+| **Universal Row Residential** | Townhouses and row homes worldwide - Boston brownstones, London terraces, Dutch canal houses |
+| **Universal Medium Residential** | Mid-rise apartments globally - Parisian Haussmann, Berlin blocks, Tokyo apartments |
+| **Universal High Residential** | Skyscrapers and towers from every culture - Manhattan high-rises, Hong Kong towers |
+| **Universal Low Rent** | Affordable housing from all regions - Social housing, public apartments |
+| **Universal Mixed Use** | Ground-floor retail with residential above - Global mixed-use developments |
+| **Universal Low Commercial** | Small shops and boutiques - Corner stores, cafes, local businesses |
+| **Universal High Commercial** | Major retail and department stores - Shopping centers, flagship stores |
+| **Universal Low Office** | Small professional buildings - Local offices, clinics |
+| **Universal High Office** | Corporate towers and business centers - Global headquarters |
+
+## UZS Alpha Test
+
+### Disclaimer
+This is an experimental, likely unstable release. Expect issues, bugs, and potential game crashes. Always backup your saves. Use at your own risk.
+
+Please head to PDXMods to install the private alpha of Universal Zoning System and join testing.
+
+### Reporting Issues
+Please report any issues or feedback you can share.
+
+**Include the following logs:**
+C:\Users<user>\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log 
+C:\Users<user>\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Player.log
+
+## Usage Info
+
+1. **Find Universal Zones** in the Zones menu - look for the "Universal" category tab
+2. **Select a Universal Zone** type (Low Residential, High Commercial, etc.)
+3. **Paint zones** near roads just like vanilla zones
+4. **Wait for buildings** to spawn - they'll come from multiple regions based on demand
+5. **Configure regions** in Options → Mods → Universal Zoning System
+
+### Mod Settings
+Access via **Options → Mods → Universal Zoning System**
+
+- **Region Toggles**: Enable/Disable specific regions (North America, Europe, Japan, etc.)
+- **Verbose Logging**: Enable detailed logging for troubleshooting
+
+### Supported Regions
+
+| Flag | Region | Building Prefixes |
+|------|--------|-------------------|
+| 🇺🇸 | North America | NA_, USNE_, USSW_ |
+| 🇪🇺 | European | EU_ |
+| 🇬🇧 | United Kingdom | UK_ |
+| 🇩🇪 | Germany | GER_, DE_ |
+| 🇫🇷 | France | FR_ |
+| 🇳🇱 | Netherlands | NL_ |
+| 🇵🇱 | Eastern Europe | EE_ |
+| 🇯🇵 | Japan | JP_ |
+| 🇨🇳 | China | CN_ |
+| 🌐 | Generic | (non-regional buildings) |
 
 ## How It Works
 
-The Universal Zoning System works within Cities: Skylines II's modding framework:
+The mod creates clones of existing building prefabs and reassigns them to new universal zone prefabs:
 
-1. **Zone Creation**: The mod creates new ZonePrefab instances for each universal zone type
-2. **Building Collection**: Scans all spawnable building prefabs and categorizes them by zone type and region
-3. **Building Linking**: Creates duplicate buildings that reference universal zones
-4. **Custom UI**: A React-based UI panel displays universal zones in the zone tool
-5. **Settings Integration**: Players can enable/disable specific regions through the options menu
+1. On game load, UZS scans all installed building prefabs
+2. Buildings are categorized by zone type and region
+3. Clones are created that reference the universal zone instead of regional zones
+4. When you paint a universal zone, the game's spawn system finds ALL matching buildings
+5. Buildings spawn naturally following vanilla demand/desirability rules
 
-### How Building Spawning Works
+**Important**: Original regional zones (EU/NA Low Residential, etc.) continue to work normally with their original buildings only.
 
-When you paint a Universal zone:
-1. The game looks for buildings with `SpawnableBuildingData.m_ZonePrefab` matching the zone
-2. Our `BuildingZoneModifierSystem` has created duplicate buildings that reference the universal zone
-3. The game's spawn system randomly selects from ALL available duplicate buildings
-4. Result: A diverse mix of architectural styles from around the world!
+## Known Issues
 
-## Project Structure
+- First load after enabling mod may take slightly longer due to building cloning (~7000+ clones created)
+- Some signature/unique buildings may not clone (by design - they remain exclusive)
+- Zone colors match the template zone used (visual only, doesn't affect function)
+- Buildings follow their original level/size requirements
 
-```
-Universal Zoning System (UZS)/
-??? Mod.cs                         # Main entry point, system registration
-??? UniversalZoningSystem.cs       # Core zone management system
-??? UniversalZonePrefabSystem.cs   # Zone prefab caching and classification
-??? UniversalZoneUISystem.cs       # Creates zone prefabs
-??? UniversalZoneBindingSystem.cs  # UI bindings for React UI
-??? BuildingZoneModifierSystem.cs  # Creates building duplicates for universal zones
-??? ZoneBuildingLinkerSystem.cs    # Links buildings to zones across regions
-??? UniversalZoneCreatorSystem.cs  # Creates universal zone configurations
-??? ZoneDefinitions.cs             # Universal zone type definitions
-??? RegionPrefixManager.cs         # Regional building prefix mappings
-??? BuildingMatcher.cs             # Building-to-zone matching logic
-??? BuildingCollector.cs           # Building collection utilities
-??? DebugSystem.cs                 # Diagnostic logging
-??? Settings/
-?   ??? ModSettings.cs             # User-configurable settings
-??? Localization/
-?   ??? LocalizationManager.cs     # UI text translations
-??? UI/
-    ??? src/
-    ?   ??? index.tsx              # React UI component
-    ??? dist/
-    ?   ??? index.js               # Built UI (auto-generated)
-    ??? package.json               # NPM configuration
-    ??? build.mjs                  # UI build script
-```
+## Additional Thoughts
 
-## System Execution Order
+Long-term, I have hopes to expand this with:
+- Custom zone colors and icons for universal zones
+- Per-zone region weighting (control spawn probability by region)
+- Integration with other zoning mods
+- Support for custom/modded building packs
 
-The mod registers systems in a specific order to ensure proper initialization:
+## Credits
 
-```
-1. UniversalZoningSystem         - Collects and categorizes buildings
-2. UniversalZonePrefabSystem     - Caches zone templates, classifies zones
-3. ZoneBuildingLinkerSystem      - Analyzes building-zone relationships
-4. UniversalZoneCreatorSystem    - Prepares zone configurations
-5. UniversalZoneUISystem         - Creates ZonePrefabs, registers with PrefabSystem
-6. BuildingZoneModifierSystem    - Modifies SpawnableBuildingData on buildings
-7. DebugSystem                   - Logs diagnostics (if enabled)
-```
-
-## Universal Zone Types
-
-| Zone Type | ID | Description |
-|-----------|-----|-------------|
-| Universal Low Residential | UZS_LowResidential | Single-family homes from all regions |
-| Universal Row Residential | UZS_RowResidential | Townhouses and row homes worldwide |
-| Universal Medium Residential | UZS_MediumResidential | Mid-rise apartments globally |
-| Universal High Residential | UZS_HighResidential | Skyscrapers and towers from every culture |
-| Universal Low Rent | UZS_LowRent | Affordable housing from all regions |
-| Universal Mixed Use | UZS_MixedUse | Ground-floor retail with residential above |
-| Universal Low Commercial | UZS_LowCommercial | Small shops and boutiques |
-| Universal High Commercial | UZS_HighCommercial | Major retail and department stores |
-| Universal Low Office | UZS_LowOffice | Small professional buildings |
-| Universal High Office | UZS_HighOffice | Corporate towers and business centers |
-
-## Supported Regions
-
-| Region | Prefix(es) | Description |
-|--------|------------|-------------|
-| North America | NA_, USNE_, USSW_ | US standard, Northeast, Southwest |
-| European | EU_ | Core European buildings |
-| United Kingdom | UK_ | Victorian, Georgian, British styles |
-| Germany | GER_, DE_ | Bauhaus, German apartment blocks |
-| France | FR_ | Parisian Haussmann, provincial styles |
-| Netherlands | NL_ | Dutch canal houses, Amsterdam modern |
-| Eastern Europe | EE_ | Post-war blocks, traditional styles |
-| Japan | JP_ | Dense Tokyo apartments, modern towers |
-| China | CN_ | High-density residential, commercial |
-
-The mod automatically detects and incorporates buildings from any future DLC or mod-added regions.
-
-## Settings
-
-Access mod settings through **Options ? Universal Zoning System**:
-
-### Region Settings
-Toggle individual regions on/off to customize which building styles appear:
-- North America (includes USNE, USSW variants)
-- European
-- United Kingdom
-- Germany
-- France
-- Netherlands
-- Eastern Europe
-- Japan
-- China
-
-### Weighting Settings
-- **Equal Region Weighting**: When enabled, each region has an equal chance of being selected regardless of how many buildings it contains.
-
-### Advanced Settings
-- **Verbose Logging**: Enable detailed logging for debugging purposes
-- **Reset to Defaults**: Reset all settings to their default values
-
-## Technical Details
-
-- **Target Framework**: .NET Framework 4.8
-- **Game Version**: Cities: Skylines II
-- **Architecture**: Unity ECS (Entity Component System)
-- **Mod Framework**: Official CS2 Modding API
-- **PDX Mods**: Fully compatible
-
-### Key Technical Approach
-
-The mod works by:
-1. Creating new `ZonePrefab` instances via `ScriptableObject.CreateInstance<ZonePrefab>()`
-2. Registering them with `PrefabSystem.AddPrefab()` so they appear in the UI
-3. Modifying `SpawnableBuildingData.m_ZonePrefab` on building entities to point to our universal zones
-4. The game's native spawn system then naturally includes all linked buildings
-
-This approach:
-- ? Uses only official modding APIs
-- ? Doesn't require Harmony or code injection
-- ? Is fully compatible with PDX Mods publishing
-- ? Works with future game updates (as long as APIs remain stable)
-
-## Building the Mod
-
-1. Install Cities: Skylines II modding tools
-2. Set environment variable: `CSII_TOOLPATH` ? path to modding tools
-3. Open `Universal Zoning System (UZS).sln` in Visual Studio
-4. Build (F6 or Ctrl+Shift+B)
-5. The mod will be output to the game's mod folder
-
-## Publishing to PDX Mods
-
-The project includes publish profiles in `Properties/PublishProfiles/`:
-- `PublishNewMod.pubxml` - First-time publishing
-- `PublishNewVersion.pubxml` - Update existing mod
-
-## Troubleshooting
-
-### Zones don't appear in vanilla toolbar
-The vanilla zoning toolbar is built during game initialization and doesn't support dynamically added zones. 
-
-**Current workaround options:**
-1. Use the **Find It** mod to search for and place universal zones by name (e.g., "UZS_LowResidential")
-2. Use the **Asset Menu Helper** mod if available
-3. The zones ARE registered in the game - they just need a UI to access them
-
-**Why this happens:**
-- The game's toolbar UI is built from prefabs during initialization
-- Prefabs added via `PrefabSystem.AddPrefab()` after this point don't automatically appear
-- This is a limitation of the vanilla modding API, not a bug in this mod
-
-**Future solutions being explored:**
-- Custom UI panel for universal zone selection
-- Integration with the game's asset menu system
-- Hooking into the zone tool selection
-
-### Buildings not spawning in universal zones
-- Enable Verbose Logging in settings and check the log file
-- Look for "Created X building duplicates for..." messages
-- Verify the region is enabled in settings
-- Check that buildings exist for that zone type in your installed DLCs
-
-### Original zones broken
-If original regional zones stop working, this indicates the mod is modifying buildings incorrectly. The current implementation creates **duplicate** building prefabs rather than modifying originals, which should preserve original zone functionality.
-
-### Log File Location
-Logs are written to: `%LOCALAPPDATA%Low\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
-
-## Contributing
-
-Contributions are welcome! Key areas for development:
-- Testing with various DLC combinations
-- UI improvements for zone selection
-- Additional region support
-- Performance optimization
-
-## License
-
-[Add your license here]
+- Built using the Cities: Skylines II modding framework
+- Thanks to the CS2 modding community for documentation and support
+- Inspired by the desire for diverse, cosmopolitan cityscapes

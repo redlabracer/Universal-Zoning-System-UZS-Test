@@ -1,9 +1,8 @@
 using System;
-using System.IO;
-using System.Text;
 using Colossal.Logging;
 using Game;
 using Game.Prefabs;
+using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -18,17 +17,18 @@ namespace UniversalZoningSystem
         private static readonly ILog Log = Mod.Log;
 
         private PrefabSystem _prefabSystem;
-        private UniversalZoningSystem _universalZoningSystem;
         private UniversalZonePrefabSystem _zonePrefabSystem;
+        private UniversalZoneUISystem _zoneUISystem;
         private EntityQuery _buildingQuery;
         private bool _hasLoggedDiagnostics;
+        private int _frameDelay;
 
         protected override void OnCreate()
         {
             base.OnCreate();
             _prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-            _universalZoningSystem = World.GetOrCreateSystemManaged<UniversalZoningSystem>();
             _zonePrefabSystem = World.GetOrCreateSystemManaged<UniversalZonePrefabSystem>();
+            _zoneUISystem = World.GetOrCreateSystemManaged<UniversalZoneUISystem>();
 
             _buildingQuery = GetEntityQuery(
                 ComponentType.ReadOnly<BuildingData>(),
@@ -36,8 +36,7 @@ namespace UniversalZoningSystem
                 ComponentType.ReadOnly<PrefabData>()
             );
 
-            // Only enable this system if verbose logging is enabled
-            Enabled = false;
+            Enabled = true; // Enable for diagnostic logging
         }
 
         protected override void OnUpdate()
@@ -48,12 +47,16 @@ namespace UniversalZoningSystem
                 return;
             }
 
-            // Check if verbose logging is enabled
-            if (Mod.Settings == null || !Mod.Settings.EnableVerboseLogging)
-            {
-                Enabled = false;
+            _frameDelay++;
+            
+            // Wait a long time to ensure all systems have run
+            // Building duplication takes several minutes!
+            if (_frameDelay < 500)
                 return;
-            }
+
+            // Also wait for zone UI system to have created zones
+            if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
+                return;
 
             // Wait for data to be loaded
             if (_buildingQuery.IsEmptyIgnoreFilter)
@@ -61,105 +64,97 @@ namespace UniversalZoningSystem
 
             try
             {
-                LogDiagnostics();
+                VerifyUniversalZoneBuildings();
                 _hasLoggedDiagnostics = true;
             }
             catch (Exception ex)
             {
-                Log.Error($"Error logging diagnostics: {ex.Message}");
+                Log.Error($"Error in debug verification: {ex.Message}\n{ex.StackTrace}");
                 _hasLoggedDiagnostics = true;
             }
         }
 
-        private void LogDiagnostics()
+        private void VerifyUniversalZoneBuildings()
         {
-            Log.Info("=== Universal Zoning System Diagnostics ===");
+            Log.Info("=== Verifying Universal Zone Building Registration ===");
 
-            // Log building statistics
+            var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
             var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
-            var zoneDataLookup = GetComponentLookup<ZoneData>(true);
 
-            var collection = BuildingCollector.CollectBuildings(
-                _buildingQuery,
-                spawnableDataLookup,
-                zoneDataLookup,
-                _prefabSystem
-            );
-
-            collection.LogStatistics(Log);
-
-            // Log zone templates
-            Log.Info("Zone Templates:");
-            foreach (var kvp in _zonePrefabSystem.ZoneTemplates)
-            {
-                Log.Info($"  {kvp.Key}");
-            }
-
-            // Log enabled regions from settings
-            if (Mod.Settings != null)
-            {
-                Log.Info("Enabled Region Prefixes:");
-                foreach (var prefix in Mod.Settings.GetEnabledRegionPrefixes())
-                {
-                    Log.Info($"  {prefix}");
-                }
-            }
-
-            Log.Info("=== End Diagnostics ===");
-        }
-
-        /// <summary>
-        /// Exports a full building report to a file.
-        /// </summary>
-        public void ExportBuildingReport(string filePath)
-        {
             try
             {
-                var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
-                var zoneDataLookup = GetComponentLookup<ZoneData>(true);
-
-                var collection = BuildingCollector.CollectBuildings(
-                    _buildingQuery,
-                    spawnableDataLookup,
-                    zoneDataLookup,
-                    _prefabSystem
-                );
-
-                var sb = new StringBuilder();
-                sb.AppendLine("Universal Zoning System - Building Report");
-                sb.AppendLine($"Generated: {DateTime.Now}");
-                sb.AppendLine($"Total Buildings: {collection.TotalCount}");
-                sb.AppendLine();
-
-                sb.AppendLine("=== Buildings by Region ===");
-                foreach (var region in collection.GetRegions())
+                // For each universal zone, count how many buildings reference it
+                foreach (var definition in ZoneDefinitions.AllZones)
                 {
-                    var buildings = collection.GetBuildingsByRegion(region);
-                    sb.AppendLine($"\n{region} ({buildings.Count} buildings):");
-                    foreach (var building in buildings)
+                    var zoneEntity = _zoneUISystem.GetUniversalZoneEntity(definition.Id);
+                    if (zoneEntity == Entity.Null)
                     {
-                        sb.AppendLine($"  - {building.Prefab.name} [{building.ZoneType}]");
+                        Log.Info($"  {definition.Id}: Zone entity not found");
+                        continue;
                     }
-                }
 
-                sb.AppendLine("\n=== Buildings by Zone Type ===");
-                foreach (var zoneType in collection.GetZoneTypes())
-                {
-                    var buildings = collection.GetBuildingsByZoneType(zoneType);
-                    sb.AppendLine($"\n{zoneType} ({buildings.Count} buildings):");
-                    foreach (var building in buildings)
+                    // Log all components on the zone entity
+                    Log.Info($"  {definition.Id} (Entity: {zoneEntity.Index}) components:");
+                    
+                    if (EntityManager.HasComponent<ZoneData>(zoneEntity))
                     {
-                        sb.AppendLine($"  - {building.Prefab.name} [{building.Region}]");
+                        var zd = EntityManager.GetComponentData<ZoneData>(zoneEntity);
+                        Log.Info($"    ZoneData: AreaType={zd.m_AreaType}, ZoneType={zd.m_ZoneType}, Flags={zd.m_ZoneFlags}");
                     }
-                }
+                    else
+                    {
+                        Log.Warn($"    NO ZoneData!");
+                    }
 
-                File.WriteAllText(filePath, sb.ToString());
-                Log.Info($"Building report exported to: {filePath}");
+                    if (EntityManager.HasComponent<PrefabData>(zoneEntity))
+                    {
+                        Log.Info($"    Has PrefabData");
+                    }
+
+                    // Check for any buffer components
+                    var componentTypes = EntityManager.GetComponentTypes(zoneEntity);
+                    Log.Info($"    All components ({componentTypes.Length}):");
+                    foreach (var ct in componentTypes)
+                    {
+                        Log.Info($"      - {ct.GetManagedType()?.Name ?? ct.ToString()}");
+                    }
+                    componentTypes.Dispose();
+
+                    int matchingBuildings = 0;
+                    int totalChecked = 0;
+
+                    foreach (var buildingEntity in buildingEntities)
+                    {
+                        if (!spawnableDataLookup.HasComponent(buildingEntity))
+                            continue;
+
+                        totalChecked++;
+                        var spawnData = spawnableDataLookup[buildingEntity];
+                        
+                        if (spawnData.m_ZonePrefab == zoneEntity)
+                        {
+                            matchingBuildings++;
+                            
+                            // Log first few matches
+                            if (matchingBuildings <= 3)
+                            {
+                                if (_prefabSystem.TryGetPrefab<BuildingPrefab>(buildingEntity, out var prefab))
+                                {
+                                    Log.Info($"    Match: {prefab.name} (Entity: {buildingEntity.Index})");
+                                }
+                            }
+                        }
+                    }
+
+                    Log.Info($"  {definition.Id}: {matchingBuildings} buildings reference this zone (checked {totalChecked})");
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Log.Error($"Failed to export building report: {ex.Message}");
+                buildingEntities.Dispose();
             }
+
+            Log.Info("=== End Verification ===");
         }
 
         protected override void OnDestroy()

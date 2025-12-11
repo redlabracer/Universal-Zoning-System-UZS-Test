@@ -43,17 +43,20 @@ namespace UniversalZoningSystem
             { "Residential Low", new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false) },
             { "JP Residential Low", new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false) },
             { "CN Residential Low", new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false) },
+            { "EE Residential Low", new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false) },
 
-            // Residential Row
-            { "EU Residential Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
-            { "NA Residential Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
-            { "Residential Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
-            { "UK Residential Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
+            // Residential Row (Medium Row in CS2 naming)
+            { "EU Residential Medium Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
+            { "NA Residential Medium Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
+            { "Residential Medium Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
+            { "UK Residential Medium Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
+            { "EE Residential Medium Row", new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true) },
 
-            // Residential Medium
+            // Residential Medium (non-row)
             { "EU Residential Medium", new ZoneClassification(ZoneType.ResidentialMedium, AreaType.Residential, false) },
             { "NA Residential Medium", new ZoneClassification(ZoneType.ResidentialMedium, AreaType.Residential, false) },
             { "Residential Medium", new ZoneClassification(ZoneType.ResidentialMedium, AreaType.Residential, false) },
+            { "EE Residential Medium", new ZoneClassification(ZoneType.ResidentialMedium, AreaType.Residential, false) },
 
             // Residential High
             { "EU Residential High", new ZoneClassification(ZoneType.ResidentialHigh, AreaType.Residential, false) },
@@ -65,10 +68,11 @@ namespace UniversalZoningSystem
             { "NA Residential Mixed", new ZoneClassification(ZoneType.ResidentialMixed, AreaType.Residential, false) },
             { "Residential Mixed", new ZoneClassification(ZoneType.ResidentialMixed, AreaType.Residential, false) },
 
-            // Low Rent
-            { "EU Low Rent Housing", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
-            { "NA Low Rent Housing", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
-            { "Low Rent Housing", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
+            // Low Rent (CS2 naming: "Residential LowRent")
+            { "Residential LowRent", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
+            { "EU Residential LowRent", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
+            { "NA Residential LowRent", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
+            { "EE Residential LowRent", new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false) },
 
             // Commercial Low
             { "EU Commercial Low", new ZoneClassification(ZoneType.CommercialLow, AreaType.Commercial, false) },
@@ -399,12 +403,19 @@ namespace UniversalZoningSystem
         {
             var lower = zoneName.ToLowerInvariant();
 
+            // Check for Low Rent FIRST - before checking residential low
+            // "Residential LowRent" should match LowRent, not ResidentialLow
+            if (lower.Contains("lowrent") || lower.Contains("low rent"))
+                return new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false);
+
             if (lower.Contains("residential"))
             {
-                if (lower.Contains("low") && !lower.Contains("rent"))
-                    return new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false);
+                // IMPORTANT: Check for "row" BEFORE "medium" since row zones contain both words
+                // e.g., "EU Residential Medium Row" should be ResidentialRow, not ResidentialMedium
                 if (lower.Contains("row"))
                     return new ZoneClassification(ZoneType.ResidentialRow, AreaType.Residential, true);
+                if (lower.Contains("low"))
+                    return new ZoneClassification(ZoneType.ResidentialLow, AreaType.Residential, false);
                 if (lower.Contains("medium"))
                     return new ZoneClassification(ZoneType.ResidentialMedium, AreaType.Residential, false);
                 if (lower.Contains("high"))
@@ -412,9 +423,6 @@ namespace UniversalZoningSystem
                 if (lower.Contains("mixed"))
                     return new ZoneClassification(ZoneType.ResidentialMixed, AreaType.Residential, false);
             }
-
-            if (lower.Contains("low rent") || lower.Contains("lowrent"))
-                return new ZoneClassification(ZoneType.ResidentialLowRent, AreaType.Residential, false);
 
             if (lower.Contains("commercial"))
             {

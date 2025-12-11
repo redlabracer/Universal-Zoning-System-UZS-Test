@@ -4,6 +4,7 @@ using System.Linq;
 using Colossal.Logging;
 using Game;
 using Game.Prefabs;
+using Game.SceneFlow;
 using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
@@ -53,6 +54,22 @@ namespace UniversalZoningSystem
             Log.Info("BuildingZoneModifierSystem created.");
         }
 
+        /// <summary>
+        /// Run during game preload to modify buildings BEFORE the spawn system caches them.
+        /// </summary>
+        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGamePreload(purpose, mode);
+            
+            Log.Info($"BuildingZoneModifierSystem.OnGamePreload: Purpose={purpose}, Mode={mode}");
+            
+            if (!mode.IsGameOrEditor())
+                return;
+
+            // Try to run building modification here, before the spawn system caches buildings
+            TryModifyBuildings();
+        }
+
         protected override void OnUpdate()
         {
             if (_initialized)
@@ -71,135 +88,176 @@ namespace UniversalZoningSystem
             if (_frameDelay < 25)
                 return;
 
+            TryModifyBuildings();
+        }
+
+        private void TryModifyBuildings()
+        {
+            if (_initialized)
+                return;
+
+            // Need zones to be created first
+            if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
+            {
+                Log.Info("Waiting for universal zones to be created...");
+                return;
+            }
+
+            // Need buildings to be loaded
+            if (_buildingQuery.IsEmptyIgnoreFilter)
+            {
+                Log.Info("Waiting for buildings to load...");
+                return;
+            }
+
             try
             {
-                CreateBuildingDuplicatesForUniversalZones();
+                ModifyBuildingsForUniversalZones();
                 _initialized = true;
             }
             catch (Exception ex)
             {
-                Log.Error($"Failed to create building duplicates: {ex.Message}\n{ex.StackTrace}");
+                Log.Error($"Failed to modify buildings: {ex.Message}\n{ex.StackTrace}");
                 _initialized = true;
             }
         }
 
-        private void CreateBuildingDuplicatesForUniversalZones()
+        private void ModifyBuildingsForUniversalZones()
         {
-            Log.Info("=== Creating Building Duplicates for Universal Zones ===");
-            Log.Info("Original buildings will NOT be modified - only creating duplicates.");
+            Log.Info("=== Creating Building Clones for Universal Zones ===");
+            Log.Info("Using the working approach from the old UZS mod!");
+
+            // Build a cache of existing prefab names to avoid duplicates
+            var existingPrefabNames = new HashSet<string>();
+            var allPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>());
+            var allPrefabEntities = allPrefabsQuery.ToEntityArray(Allocator.Temp);
+            foreach (var entity in allPrefabEntities)
+            {
+                var prefab = _prefabSystem.GetPrefab<PrefabBase>(entity);
+                if (prefab != null)
+                {
+                    existingPrefabNames.Add(prefab.name);
+                }
+            }
+            allPrefabEntities.Dispose();
 
             var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
             var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
 
             try
             {
-                // For each universal zone definition
-                foreach (var definition in ZoneDefinitions.AllZones)
+                int totalCloned = 0;
+
+                foreach (var buildingEntity in buildingEntities)
                 {
-                    // Get the universal zone prefab
-                    var universalZonePrefab = _zoneUISystem.GetUniversalZonePrefab(definition.Id);
-                    if (universalZonePrefab == null)
+                    if (!spawnableDataLookup.HasComponent(buildingEntity))
+                        continue;
+
+                    var spawnData = spawnableDataLookup[buildingEntity];
+                    if (spawnData.m_ZonePrefab == Entity.Null)
+                        continue;
+
+                    // Get the building prefab
+                    var buildingPrefab = _prefabSystem.GetPrefab<BuildingPrefab>(buildingEntity);
+                    if (buildingPrefab == null)
+                        continue;
+
+                    // Skip if already a Universal clone
+                    if (buildingPrefab.name.StartsWith("Universal_"))
+                        continue;
+
+                    // Get the original zone prefab to determine zone type
+                    if (!_prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var originalZonePrefab))
+                        continue;
+
+                    // Classify the zone
+                    var classification = UniversalZonePrefabSystem.GetZoneClassification(originalZonePrefab.name);
+                    if (classification == null)
+                        continue;
+
+                    // Check region
+                    var region = RegionPrefixManager.GetRegionFromPrefabName(buildingPrefab.name);
+                    if (!IsRegionEnabled(region))
+                        continue;
+
+                    // STRICT FILTER: Validate building name matches the zone type
+                    // This prevents buildings like "LowRent" from being cloned into "LowResidential"
+                    if (!IsBuildingValidForZoneType(buildingPrefab.name, classification.ZoneType))
                     {
-                        Log.Warn($"Universal zone prefab not found: {definition.Id}");
                         continue;
                     }
 
-                    int duplicatesCreated = 0;
-                    var regionCounts = new Dictionary<string, int>();
+                    // Find the matching universal zone
+                    string universalZoneId = GetUniversalZoneIdForType(classification.ZoneType);
+                    if (universalZoneId == null)
+                        continue;
 
-                    // Find all buildings that match this zone type
-                    foreach (var buildingEntity in buildingEntities)
+                    var universalZonePrefab = _zoneUISystem.GetUniversalZonePrefab(universalZoneId);
+                    if (universalZonePrefab == null)
+                        continue;
+
+                    // Check if clone already exists
+                    string cloneName = "Universal_" + buildingPrefab.name;
+                    if (existingPrefabNames.Contains(cloneName))
+                        continue;
+
+                    // CLONE the prefab and set the zone BEFORE adding to prefab system
+                    var newPrefab = UnityEngine.Object.Instantiate(buildingPrefab);
+                    newPrefab.name = cloneName;
+
+                    // Update the SpawnableBuilding component on the PREFAB (not entity!)
+                    // This is the KEY difference from our previous approach
+                    if (newPrefab.TryGet<SpawnableBuilding>(out var spawnable))
                     {
-                        if (!spawnableDataLookup.HasComponent(buildingEntity))
-                            continue;
+                        spawnable.m_ZoneType = universalZonePrefab;
 
-                        var spawnData = spawnableDataLookup[buildingEntity];
-                        if (spawnData.m_ZonePrefab == Entity.Null)
-                            continue;
+                        // Register with prefab system - this creates the entity with correct zone
+                        _prefabSystem.AddPrefab(newPrefab);
+                        _createdDuplicates.Add(newPrefab);
+                        existingPrefabNames.Add(cloneName);
+                        totalCloned++;
 
-                        // Get the building prefab
-                        if (!_prefabSystem.TryGetPrefab<BuildingPrefab>(buildingEntity, out var originalBuilding))
-                            continue;
-
-                        // Skip if this is already a UZS duplicate
-                        if (originalBuilding.name.EndsWith("_UZS"))
-                            continue;
-
-                        // Get the original zone prefab
-                        if (!_prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var originalZonePrefab))
-                            continue;
-
-                        // Check if zone type matches
-                        var classification = UniversalZonePrefabSystem.GetZoneClassification(originalZonePrefab.name);
-                        if (classification == null)
-                            continue;
-
-                        bool matchesDefinition = definition.SourceZoneTypes.Contains(classification.ZoneType);
-                        if (!matchesDefinition)
-                            continue;
-
-                        // Check region
-                        var region = RegionPrefixManager.GetRegionFromPrefabName(originalBuilding.name);
-                        if (!IsRegionEnabled(region))
-                            continue;
-
-                        // Create a duplicate building that references the universal zone
-                        var duplicate = CreateBuildingDuplicate(originalBuilding, universalZonePrefab, definition.Id);
-                        if (duplicate != null)
+                        if (totalCloned <= 5)
                         {
-                            _prefabSystem.AddPrefab(duplicate);
-                            _createdDuplicates.Add(duplicate);
-                            
-                            // Verify the entity was created correctly
-                            var duplicateEntity = _prefabSystem.GetEntity(duplicate);
-                            if (duplicateEntity != Entity.Null)
-                            {
-                                // Check if SpawnableBuildingData was set correctly
-                                if (EntityManager.HasComponent<SpawnableBuildingData>(duplicateEntity))
-                                {
-                                    var dupSpawnData = EntityManager.GetComponentData<SpawnableBuildingData>(duplicateEntity);
-                                    var expectedZoneEntity = _prefabSystem.GetEntity(universalZonePrefab);
-                                    
-                                    if (dupSpawnData.m_ZonePrefab != expectedZoneEntity)
-                                    {
-                                        // Fix the zone reference on the entity
-                                        dupSpawnData.m_ZonePrefab = expectedZoneEntity;
-                                        EntityManager.SetComponentData(duplicateEntity, dupSpawnData);
-                                        
-                                        if (Mod.Settings?.EnableVerboseLogging == true)
-                                        {
-                                            Log.Info($"  Fixed zone reference for {duplicate.name}: {dupSpawnData.m_ZonePrefab.Index} -> {expectedZoneEntity.Index}");
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            duplicatesCreated++;
-
-                            if (!regionCounts.ContainsKey(region))
-                                regionCounts[region] = 0;
-                            regionCounts[region]++;
-
-                            if (!_duplicatesByRegion.ContainsKey(region))
-                                _duplicatesByRegion[region] = 0;
-                            _duplicatesByRegion[region]++;
+                            Log.Info($"  Cloned: {cloneName} -> {universalZonePrefab.name}");
                         }
+
+                        // Track statistics
+                        if (!_duplicatesByZone.ContainsKey(universalZoneId))
+                            _duplicatesByZone[universalZoneId] = 0;
+                        _duplicatesByZone[universalZoneId]++;
+
+                        if (!_duplicatesByRegion.ContainsKey(region))
+                            _duplicatesByRegion[region] = 0;
+                        _duplicatesByRegion[region]++;
                     }
-
-                    if (duplicatesCreated > 0)
+                    else
                     {
-                        _duplicatesByZone[definition.Id] = duplicatesCreated;
-                        
-                        var regionBreakdown = regionCounts
-                            .OrderByDescending(x => x.Value)
-                            .Select(x => $"{x.Key}:{x.Value}")
-                            .ToList();
-
-                        Log.Info($"Created {duplicatesCreated} duplicates for {definition.Name} [{string.Join(", ", regionBreakdown)}]");
+                        Log.Warn($"Could not find SpawnableBuilding component on {newPrefab.name}");
+                        UnityEngine.Object.Destroy(newPrefab);
                     }
                 }
 
-                LogResults();
+                Log.Info($"=== Building Cloning Complete ===");
+                Log.Info($"Total buildings cloned: {totalCloned}");
+                
+                if (_duplicatesByZone.Count > 0)
+                {
+                    Log.Info("Clones by Universal Zone:");
+                    foreach (var kvp in _duplicatesByZone.OrderByDescending(x => x.Value))
+                    {
+                        Log.Info($"  {kvp.Key}: {kvp.Value} buildings");
+                    }
+                }
+
+                if (_duplicatesByRegion.Count > 0)
+                {
+                    Log.Info("Clones by Region:");
+                    foreach (var kvp in _duplicatesByRegion.OrderByDescending(x => x.Value))
+                    {
+                        Log.Info($"  {kvp.Key}: {kvp.Value} buildings");
+                    }
+                }
             }
             finally
             {
@@ -207,113 +265,79 @@ namespace UniversalZoningSystem
             }
         }
 
-        private BuildingPrefab CreateBuildingDuplicate(BuildingPrefab original, ZonePrefab targetZone, string zoneId)
+        private string GetUniversalZoneIdForType(ZoneType zoneType)
         {
-            try
+            switch (zoneType)
             {
-                // Clone the entire prefab
-                var duplicate = UnityEngine.Object.Instantiate(original);
-                duplicate.name = $"{original.name}_UZS";
-
-                // Find and update the SpawnableBuilding component to reference our universal zone
-                var spawnableBuilding = duplicate.GetComponent<SpawnableBuilding>();
-                if (spawnableBuilding != null)
-                {
-                    spawnableBuilding.m_ZoneType = targetZone;
-                }
-                else
-                {
-                    // If no SpawnableBuilding component, create one
-                    spawnableBuilding = ScriptableObject.CreateInstance<SpawnableBuilding>();
-                    spawnableBuilding.m_ZoneType = targetZone;
-                    
-                    if (duplicate.components == null)
-                        duplicate.components = new List<ComponentBase>();
-                    
-                    duplicate.components.Add(spawnableBuilding);
-                }
-
-                // Remove theme restrictions so buildings spawn in all themes
-                var themeObject = duplicate.GetComponent<ThemeObject>();
-                if (themeObject != null)
-                {
-                    duplicate.components.Remove(themeObject);
-                    UnityEngine.Object.Destroy(themeObject);
-                }
-
-                if (Mod.Settings?.EnableVerboseLogging == true)
-                {
-                    Log.Info($"  Created duplicate: {duplicate.name} -> {targetZone.name}");
-                }
-
-                return duplicate;
-            }
-            catch (Exception ex)
-            {
-                Log.Warn($"Failed to duplicate {original.name}: {ex.Message}");
-                return null;
+                case ZoneType.ResidentialLow: return "UZS_LowResidential";
+                case ZoneType.ResidentialRow: return "UZS_RowResidential";
+                case ZoneType.ResidentialMedium: return "UZS_MediumResidential";
+                case ZoneType.ResidentialHigh: return "UZS_HighResidential";
+                case ZoneType.ResidentialLowRent: return "UZS_LowRent";
+                case ZoneType.ResidentialMixed: return "UZS_MixedUse";
+                case ZoneType.CommercialLow: return "UZS_LowCommercial";
+                case ZoneType.CommercialHigh: return "UZS_HighCommercial";
+                case ZoneType.OfficeLow: return "UZS_LowOffice";
+                case ZoneType.OfficeHigh: return "UZS_HighOffice";
+                default: return null;
             }
         }
 
-        private void LogResults()
+        /// <summary>
+        /// Validates that a building name is appropriate for the target zone type.
+        /// This prevents cross-contamination like LowRent buildings in LowResidential zones.
+        /// </summary>
+        private bool IsBuildingValidForZoneType(string buildingName, ZoneType zoneType)
         {
-            Log.Info("=== Building Duplication Complete ===");
-            Log.Info($"Total duplicates created: {_createdDuplicates.Count}");
-            Log.Info("Original buildings are UNCHANGED - original zones work normally.");
+            var lowerName = buildingName.ToLowerInvariant();
 
-            if (_duplicatesByZone.Count > 0)
+            switch (zoneType)
             {
-                Log.Info("Duplicates by Universal Zone:");
-                foreach (var kvp in _duplicatesByZone.OrderByDescending(x => x.Value))
-                {
-                    Log.Info($"  {kvp.Key}: {kvp.Value} buildings");
-                }
-            }
+                case ZoneType.ResidentialLow:
+                    // Exclude buildings with "lowrent", "medium", "high", "mixed", "row" in name
+                    if (lowerName.Contains("lowrent") || lowerName.Contains("low_rent") || lowerName.Contains("low rent"))
+                        return false;
+                    if (lowerName.Contains("medium") && !lowerName.Contains("low"))
+                        return false;
+                    if (lowerName.Contains("high") && !lowerName.Contains("low"))
+                        return false;
+                    if (lowerName.Contains("mixed"))
+                        return false;
+                    // Allow row houses in low residential if they're specifically low density
+                    return true;
 
-            if (_duplicatesByRegion.Count > 0)
-            {
-                Log.Info("Duplicates by Region:");
-                foreach (var kvp in _duplicatesByRegion.OrderByDescending(x => x.Value))
-                {
-                    Log.Info($"  {kvp.Key}: {kvp.Value} buildings");
-                }
-            }
+                case ZoneType.ResidentialRow:
+                    // Row houses - must have "row" in name or be from row zone
+                    // But exclude if clearly medium/high density non-row
+                    return true;
 
-            // Verify buildings are correctly linked to universal zones
-            VerifyBuildingZoneLinks();
-        }
+                case ZoneType.ResidentialMedium:
+                    // Exclude low rent, high, and row buildings
+                    if (lowerName.Contains("lowrent") || lowerName.Contains("low_rent"))
+                        return false;
+                    if (lowerName.Contains("row") && lowerName.Contains("medium"))
+                        return false; // Row buildings have their own zone
+                    return true;
 
-        private void VerifyBuildingZoneLinks()
-        {
-            Log.Info("=== Verifying Building-Zone Links ===");
-            
-            var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
-            
-            foreach (var definition in ZoneDefinitions.AllZones)
-            {
-                var zoneEntity = _zoneUISystem.GetUniversalZoneEntity(definition.Id);
-                if (zoneEntity == Entity.Null)
-                    continue;
+                case ZoneType.ResidentialHigh:
+                    // Exclude low rent buildings
+                    if (lowerName.Contains("lowrent") || lowerName.Contains("low_rent"))
+                        return false;
+                    return true;
 
-                int linkedBuildings = 0;
-                
-                foreach (var duplicate in _createdDuplicates)
-                {
-                    var entity = _prefabSystem.GetEntity(duplicate);
-                    if (entity == Entity.Null)
-                        continue;
+                case ZoneType.ResidentialLowRent:
+                    // Only allow buildings explicitly marked as low rent
+                    // The zone classification already handles this, but double-check
+                    return true;
 
-                    if (!spawnableDataLookup.HasComponent(entity))
-                        continue;
+                case ZoneType.ResidentialMixed:
+                    // Mixed use - exclude pure low rent
+                    if (lowerName.Contains("lowrent") || lowerName.Contains("low_rent"))
+                        return false;
+                    return true;
 
-                    var spawnData = spawnableDataLookup[entity];
-                    if (spawnData.m_ZonePrefab == zoneEntity)
-                    {
-                        linkedBuildings++;
-                    }
-                }
-
-                Log.Info($"  {definition.Id} (Entity {zoneEntity.Index}): {linkedBuildings} buildings linked");
+                default:
+                    return true;
             }
         }
 

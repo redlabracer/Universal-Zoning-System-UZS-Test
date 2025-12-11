@@ -333,15 +333,28 @@ namespace UniversalZoningSystem
                         if (EntityManager.HasComponent<ZoneData>(entity))
                         {
                             var currentZoneData = EntityManager.GetComponentData<ZoneData>(entity);
-                            Log.Info($"  Current ZoneData: AreaType={currentZoneData.m_AreaType}, ZoneType={currentZoneData.m_ZoneType}, ZoneFlags={currentZoneData.m_ZoneFlags}");
+                            Log.Info($"  Current ZoneData (before): AreaType={currentZoneData.m_AreaType}, ZoneType={currentZoneData.m_ZoneType}, ZoneFlags={currentZoneData.m_ZoneFlags}");
                             
                             // Copy the zone data from template
                             EntityManager.SetComponentData(entity, templateZoneData);
-                            Log.Info($"  Copied ZoneData to entity");
+                            
+                            // Verify the copy worked
+                            var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                            Log.Info($"  Verified ZoneData (after): AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
+                            
+                            if (verifiedZoneData.m_AreaType != templateZoneData.m_AreaType)
+                            {
+                                Log.Error($"  ZoneData copy FAILED! AreaType mismatch.");
+                            }
                         }
                         else
                         {
-                            Log.Warn($"  Entity {entity.Index} does not have ZoneData component!");
+                            // Entity doesn't have ZoneData - we need to add it
+                            Log.Warn($"  Entity {entity.Index} does not have ZoneData component - adding it!");
+                            EntityManager.AddComponentData(entity, templateZoneData);
+                            
+                            var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                            Log.Info($"  Added ZoneData: AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
                         }
                     }
                     else
@@ -377,64 +390,11 @@ namespace UniversalZoningSystem
                 return;
             }
 
-            // Add the category to the Zones menu's UIGroupElement buffer
-            // This is needed because just setting m_Menu isn't enough for runtime-created categories
-            AddCategoryToMenuBuffer();
+            // NOTE: We do NOT manually add zones to the category buffer.
+            // The UIObject.m_Group property on each zone prefab automatically registers them.
+            // Adding them manually causes duplicate entries in the UI.
             
             Log.Info($"Created {_universalZoneEntities.Count} universal zones (registered via UIObject.m_Group)");
-        }
-
-        private void AddCategoryToMenuBuffer()
-        {
-            // Find the Zones menu entity
-            var menuEntities = _menuQuery.ToEntityArray(Allocator.Temp);
-            try
-            {
-                foreach (var menuEntity in menuEntities)
-                {
-                    if (!_prefabSystem.TryGetPrefab<UIAssetMenuPrefab>(menuEntity, out var menuPrefab))
-                        continue;
-
-                    if (menuPrefab.name != "Zones")
-                        continue;
-
-                    // Add our category to the menu's UIGroupElement buffer
-                    if (!EntityManager.HasBuffer<UIGroupElement>(menuEntity))
-                    {
-                        Log.Warn("Zones menu doesn't have UIGroupElement buffer");
-                        continue;
-                    }
-
-                    var menuBuffer = EntityManager.GetBuffer<UIGroupElement>(menuEntity);
-                    
-                    // Check if already added
-                    bool alreadyAdded = false;
-                    for (int i = 0; i < menuBuffer.Length; i++)
-                    {
-                        if (menuBuffer[i].m_Prefab == _universalZoneCategoryEntity)
-                        {
-                            alreadyAdded = true;
-                            break;
-                        }
-                    }
-
-                    if (!alreadyAdded)
-                    {
-                        menuBuffer.Add(new UIGroupElement(_universalZoneCategoryEntity));
-                        Log.Info($"Added ZonesUniversal category to Zones menu buffer (total items: {menuBuffer.Length})");
-                    }
-                    else
-                    {
-                        Log.Info("ZonesUniversal category already in Zones menu buffer");
-                    }
-
-                    break;
-                }
-            }
-            finally
-            {
-                menuEntities.Dispose();
-            }
         }
 
         public Entity GetUniversalZoneEntity(string definitionId)

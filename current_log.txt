@@ -1,0 +1,155 @@
+[2025-12-10 15:01:10,306] [INFO]  === Universal Zoning System (Harmony Edition) Loading ===
+[2025-12-10 15:01:10,307] [INFO]  Mod location: C:/Users/charl/AppData/LocalLow/Colossal Order/Cities Skylines II/Mods/Universal Zoning System (UZS)/Universal Zoning System (UZS).dll
+[2025-12-10 15:01:10,312] [INFO]  Initializing Harmony patches...
+[2025-12-10 15:01:10,495] [INFO]  Harmony patches applied successfully. ID: com.universalzoning.mod
+[2025-12-10 15:01:10,496] [INFO]  UniversalZoneUISystem created.
+[2025-12-10 15:01:10,500] [INFO]  UniversalZonePrefabSystem created.
+[2025-12-10 15:01:10,501] [INFO]  HarmonyBuildingInitializerSystem created.
+[2025-12-10 15:01:10,501] [INFO]  Systems registered with PrefabUpdate phase.
+[2025-12-10 15:01:10,501] [INFO]  === Universal Zoning System Loaded Successfully ===
+[2025-12-10 15:02:16,285] [INFO]  === Starting Universal Zone UI Creation ===
+[2025-12-10 15:02:16,286] [INFO]  Searching through 88 zone entities for templates...
+[2025-12-10 15:02:16,287] [INFO]  Template for CommercialLow: CCP6 Commercial Low
+[2025-12-10 15:02:16,289] [INFO]  Template for ResidentialMixed: UbPr Residential Mixed
+[2025-12-10 15:02:16,289] [INFO]  Template for ResidentialMedium: CCP5 Residential Medium
+[2025-12-10 15:02:16,290] [INFO]  Template for OfficeHigh: FR Office High
+[2025-12-10 15:02:16,290] [INFO]  Template for ResidentialLow: EE Residential LowRent
+[2025-12-10 15:02:16,291] [INFO]  Template for OfficeLow: USSW Office Low
+[2025-12-10 15:02:16,291] [INFO]  Template for ResidentialHigh: CN Residential High
+[2025-12-10 15:02:16,291] [INFO]  Template for CommercialHigh: EU Commercial High
+[2025-12-10 15:02:16,292] [INFO]  Template for ResidentialMixed: EU Residential Mixed Old Town
+[2025-12-10 15:02:16,292] [INFO]  Template for ResidentialMixed: EU Residential Mixed
+[2025-12-10 15:02:16,293] [INFO]  Template for CommercialHigh: NA Commercial High
+[2025-12-10 15:02:16,293] [INFO]  Template for ResidentialMixed: NA Residential Mixed Old Town
+[2025-12-10 15:02:16,293] [INFO]  Template for ResidentialMixed: NA Residential Mixed
+[2025-12-10 15:02:16,294] [INFO]  Template for ResidentialHigh: EU Residential High
+[2025-12-10 15:02:16,294] [INFO]  Template for ResidentialLow: NA Residential Low Waterfront
+[2025-12-10 15:02:16,294] [INFO]  Template for ResidentialMedium: EU Residential Medium Row
+[2025-12-10 15:02:16,295] [INFO]  Template for ResidentialMedium: EU Residential Medium
+[2025-12-10 15:02:16,295] [INFO]  Template for ResidentialHigh: NA Residential High
+[2025-12-10 15:02:16,295] [INFO]  Template for ResidentialLow: EU Residential Low Waterfront
+[2025-12-10 15:02:16,296] [INFO]  Template for ResidentialMedium: NA Residential Medium Row
+[2025-12-10 15:02:16,296] [INFO]  Template for ResidentialMedium: NA Residential Medium
+[2025-12-10 15:02:16,297] [INFO]  Template for CommercialLow: EU Commercial Low Waterfront
+[2025-12-10 15:02:16,297] [INFO]  Template for CommercialLow: NA Commercial Low Waterfront
+[2025-12-10 15:02:16,297] [INFO]  Template for CommercialLow: NA Commercial Low
+[2025-12-10 15:02:16,297] [INFO]  Template for CommercialLow: EU Commercial Low
+[2025-12-10 15:02:16,298] [INFO]  Template for ResidentialLow: EU Residential Low
+[2025-12-10 15:02:16,298] [INFO]  Template for ResidentialLow: NA Residential Low
+[2025-12-10 15:02:16,298] [INFO]  Found 8 zone templates.
+[2025-12-10 15:02:16,299] [INFO]  Found Zones menu: Zones (Entity: 17093)
+[2025-12-10 15:02:16,300] [INFO]  Created Universal Zones category:
+[2025-12-10 15:02:16,300] [INFO]    Name: ZonesUniversal
+[2025-12-10 15:02:16,301] [INFO]    Menu: Zones
+[2025-12-10 15:02:16,301] [INFO]    Icon: Media/Game/Icons/Zones.svg
+[2025-12-10 15:02:16,301] [INFO]    Priority: 100
+[2025-12-10 15:02:16,302] [INFO]    Entity: 63671
+[2025-12-10 15:02:16,304] [INFO]    UZS_LowResidential: Priority=0, Group=ZonesUniversal
+[2025-12-10 15:02:16,304] [INFO]    Removed ThemeObject from UZS_LowResidential
+[2025-12-10 15:02:16,305] [INFO]    Template ZoneData: AreaType=Residential, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,305] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,307] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,307] [INFO]  Created universal zone: Universal Low Residential (Entity: 63672)
+[2025-12-10 15:02:16,307] [INFO]  No template for UZS_RowResidential (type: ResidentialRow), skipping...
+[2025-12-10 15:02:16,308] [INFO]    UZS_MediumResidential: Priority=1, Group=ZonesUniversal
+[2025-12-10 15:02:16,308] [INFO]    Removed ThemeObject from UZS_MediumResidential
+[2025-12-10 15:02:16,309] [INFO]    Template ZoneData: AreaType=Residential, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,309] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,309] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,310] [INFO]  Created universal zone: Universal Medium Residential (Entity: 63673)
+[2025-12-10 15:02:16,310] [INFO]    UZS_HighResidential: Priority=2, Group=ZonesUniversal
+[2025-12-10 15:02:16,310] [INFO]    Removed ThemeObject from UZS_HighResidential
+[2025-12-10 15:02:16,311] [INFO]    Template ZoneData: AreaType=Residential, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,311] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,311] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,312] [INFO]  Created universal zone: Universal High Residential (Entity: 63674)
+[2025-12-10 15:02:16,312] [INFO]  No template for UZS_LowRent (type: ResidentialLowRent), skipping...
+[2025-12-10 15:02:16,313] [INFO]    UZS_MixedUse: Priority=3, Group=ZonesUniversal
+[2025-12-10 15:02:16,313] [INFO]    Removed ThemeObject from UZS_MixedUse
+[2025-12-10 15:02:16,313] [INFO]    Template ZoneData: AreaType=Residential, ZoneType=Game.Zones.ZoneType, ZoneFlags=SupportLeftCorner, SupportRightCorner
+[2025-12-10 15:02:16,314] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,314] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,315] [INFO]  Created universal zone: Universal Mixed Use (Entity: 63675)
+[2025-12-10 15:02:16,315] [INFO]    UZS_LowCommercial: Priority=4, Group=ZonesUniversal
+[2025-12-10 15:02:16,315] [INFO]    Removed ThemeObject from UZS_LowCommercial
+[2025-12-10 15:02:16,315] [INFO]    Template ZoneData: AreaType=Commercial, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,317] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,317] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,318] [INFO]  Created universal zone: Universal Low Commercial (Entity: 63676)
+[2025-12-10 15:02:16,318] [INFO]    UZS_HighCommercial: Priority=5, Group=ZonesUniversal
+[2025-12-10 15:02:16,319] [INFO]    Removed ThemeObject from UZS_HighCommercial
+[2025-12-10 15:02:16,319] [INFO]    Template ZoneData: AreaType=Commercial, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,320] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,320] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,321] [INFO]  Created universal zone: Universal High Commercial (Entity: 63677)
+[2025-12-10 15:02:16,321] [INFO]    UZS_LowOffice: Priority=6, Group=ZonesUniversal
+[2025-12-10 15:02:16,431] [INFO]    Template ZoneData: AreaType=Industrial, ZoneType=Game.Zones.ZoneType, ZoneFlags=Office
+[2025-12-10 15:02:16,432] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,432] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,432] [INFO]  Created universal zone: Universal Low Office (Entity: 63678)
+[2025-12-10 15:02:16,433] [INFO]    UZS_HighOffice: Priority=7, Group=ZonesUniversal
+[2025-12-10 15:02:16,541] [INFO]    Template ZoneData: AreaType=Industrial, ZoneType=Game.Zones.ZoneType, ZoneFlags=SupportNarrow, SupportLeftCorner, SupportRightCorner, Office
+[2025-12-10 15:02:16,541] [INFO]    Current ZoneData: AreaType=None, ZoneType=Game.Zones.ZoneType, ZoneFlags=0
+[2025-12-10 15:02:16,541] [INFO]    Copied ZoneData to entity
+[2025-12-10 15:02:16,543] [INFO]  Created universal zone: Universal High Office (Entity: 63679)
+[2025-12-10 15:02:16,543] [INFO]  Created 8 universal zone prefabs.
+[2025-12-10 15:02:16,543] [INFO]  Created 8 universal zones (registered via UIObject.m_Group)
+[2025-12-10 15:02:16,544] [INFO]  === Universal Zone UI Creation Complete ===
+[2025-12-10 15:02:20,419] [INFO]  Starting Universal Zone creation...
+[2025-12-10 15:02:20,422] [INFO]  Cached 96 zone templates.
+[2025-12-10 15:02:20,513] [INFO]  Collected 7655 spawnable buildings:
+[2025-12-10 15:02:20,514] [INFO]    North America: 1290 buildings
+[2025-12-10 15:02:20,514] [INFO]    European: 1290 buildings
+[2025-12-10 15:02:20,515] [INFO]    Generic: 1115 buildings
+[2025-12-10 15:02:20,515] [INFO]    Netherlands: 645 buildings
+[2025-12-10 15:02:20,516] [INFO]    Eastern Europe: 642 buildings
+[2025-12-10 15:02:20,516] [INFO]    US Southwest: 622 buildings
+[2025-12-10 15:02:20,516] [INFO]    France: 545 buildings
+[2025-12-10 15:02:20,516] [INFO]    Japan: 387 buildings
+[2025-12-10 15:02:20,517] [INFO]    US Northeast: 380 buildings
+[2025-12-10 15:02:20,517] [INFO]    China: 371 buildings
+[2025-12-10 15:02:20,518] [INFO]    Germany: 368 buildings
+[2025-12-10 15:02:21,332] [INFO]  Modified 86 zones, added 115505 cross-region building references.
+[2025-12-10 15:02:21,334] [INFO]  === Universal Zone System Results ===
+[2025-12-10 15:02:21,342] [INFO]    ResidentialLow: 1654 buildings [Generic:426, Netherlands:235, North America:220, European:220, US Southwest:172, Eastern Europe:125, China:125, Japan:105, France:25, US Northeast:1]
+[2025-12-10 15:02:21,347] [INFO]    ResidentialMedium: 1924 buildings [Netherlands:410, France:266, Germany:235, Generic:213, Eastern Europe:160, US Southwest:145, European:122, North America:122, Japan:105, US Northeast:100, China:46]
+[2025-12-10 15:02:21,349] [INFO]    ResidentialHigh: 602 buildings [Eastern Europe:180, China:112, Generic:83, European:78, North America:78, US Northeast:41, US Southwest:30]
+[2025-12-10 15:02:21,353] [INFO]    ResidentialMixed: 1713 buildings [North America:483, European:483, Generic:139, France:137, Germany:130, US Northeast:120, Japan:85, Eastern Europe:81, US Southwest:55]
+[2025-12-10 15:02:21,357] [INFO]    CommercialLow: 1051 buildings [North America:309, European:309, US Southwest:128, Eastern Europe:92, Japan:90, Generic:87, US Northeast:35, China:1]
+[2025-12-10 15:02:21,357] [INFO]    CommercialHigh: 178 buildings [European:78, North America:78, Generic:11, Germany:3, China:2, US Northeast:2, Eastern Europe:2, France:1, US Southwest:1]
+[2025-12-10 15:02:21,358] [INFO]    OfficeLow: 167 buildings [US Southwest:90, Generic:75, Eastern Europe:1, China:1]
+[2025-12-10 15:02:21,361] [INFO]    OfficeHigh: 366 buildings [France:116, China:84, US Northeast:81, Generic:81, Japan:2, Eastern Europe:1, US Southwest:1]
+[2025-12-10 15:02:21,361] [INFO]  === End Results ===
+[2025-12-10 15:02:21,361] [INFO]  Universal Zone creation complete!
+[2025-12-10 15:02:22,008] [INFO]  === Adding Universal Zone Links to Buildings ===
+[2025-12-10 15:02:22,069] [INFO]  Added UniversalZoneLink to 7655 buildings:
+[2025-12-10 15:02:22,070] [INFO]    OfficeLow: 167 buildings
+[2025-12-10 15:02:22,070] [INFO]    OfficeHigh: 366 buildings
+[2025-12-10 15:02:22,070] [INFO]    ResidentialMedium: 1924 buildings
+[2025-12-10 15:02:22,071] [INFO]    ResidentialLow: 1654 buildings
+[2025-12-10 15:02:22,071] [INFO]    ResidentialHigh: 602 buildings
+[2025-12-10 15:02:22,072] [INFO]    CommercialLow: 1051 buildings
+[2025-12-10 15:02:22,072] [INFO]    ResidentialMixed: 1713 buildings
+[2025-12-10 15:02:22,072] [INFO]    CommercialHigh: 178 buildings
+[2025-12-10 15:02:22,073] [INFO]  Original zone references are PRESERVED - regional zones still work!
+[2025-12-10 15:02:22,073] [INFO]  Registering universal zones with Harmony patches...
+[2025-12-10 15:02:22,075] [INFO]  [Harmony] Registered universal zone: Entity 63672 -> ResidentialLow
+[2025-12-10 15:02:22,076] [INFO]  [Harmony] Registered universal zone: Entity 63673 -> ResidentialMedium
+[2025-12-10 15:02:22,076] [INFO]  [Harmony] Registered universal zone: Entity 63674 -> ResidentialHigh
+[2025-12-10 15:02:22,077] [INFO]  [Harmony] Registered universal zone: Entity 63675 -> ResidentialMixed
+[2025-12-10 15:02:22,077] [INFO]  [Harmony] Registered universal zone: Entity 63676 -> CommercialLow
+[2025-12-10 15:02:22,077] [INFO]  [Harmony] Registered universal zone: Entity 63677 -> CommercialHigh
+[2025-12-10 15:02:22,077] [INFO]  [Harmony] Registered universal zone: Entity 63678 -> OfficeLow
+[2025-12-10 15:02:22,077] [INFO]  [Harmony] Registered universal zone: Entity 63679 -> OfficeHigh
+[2025-12-10 15:02:22,078] [INFO]  [Harmony] Initializing building cache...
+[2025-12-10 15:02:22,111] [INFO]  [Harmony] Building cache initialized with 7655 buildings
+[2025-12-10 15:02:22,112] [INFO]    ResidentialLow: 1654 buildings
+[2025-12-10 15:02:22,112] [INFO]    ResidentialMedium: 1924 buildings
+[2025-12-10 15:02:22,113] [INFO]    ResidentialHigh: 602 buildings
+[2025-12-10 15:02:22,113] [INFO]    ResidentialMixed: 1713 buildings
+[2025-12-10 15:02:22,113] [INFO]    CommercialLow: 1051 buildings
+[2025-12-10 15:02:22,114] [INFO]    CommercialHigh: 178 buildings
+[2025-12-10 15:02:22,114] [INFO]    OfficeLow: 167 buildings
+[2025-12-10 15:02:22,114] [INFO]    OfficeHigh: 366 buildings
+[2025-12-10 15:02:22,115] [INFO]  [Harmony] ZoneSpawnSystemPatch systems initialized.
+[2025-12-10 15:02:22,115] [INFO]  === Universal Zone Links Complete ===
