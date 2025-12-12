@@ -8,38 +8,38 @@
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-# Universal Zoning System (UZS)
+		# Universal Zoning System (UZS)
 
-Create diverse, multi-cultural cities by mixing architectural styles from all regions in unified zone types!
+		Create diverse, multi-cultural cities by mixing architectural styles from all regions in unified zone types!
 
-**Now in ALPHA TESTING - Volunteers needed!**
+		**Now in ALPHA TESTING - Volunteers needed!**
 
-## Features
+		## Features
 
-- **10 Universal Zone Types** - Low/Medium/High Residential, Row Houses, Low Rent, Mixed Use, Low/High Commercial, Low/High Office
-- **Multi-Region Building Mix** - Buildings from NA, EU, UK, Germany, France, Netherlands, Eastern Europe, Japan, China spawn together
-- **Vanilla Spawning Logic** - Buildings still respect demand, land value, and desirability
-- **Original Zones Preserved** - EU/NA zones continue to work normally
-- **Region Toggles** - Enable/disable specific regions in mod settings
-- **PDX Mods Compatible** - No Harmony patches required
+		- **10 Universal Zone Types** - Low/Medium/High Residential, Row Houses, Low Rent, Mixed Use, Low/High Commercial, Low/High Office
+		- **Multi-Region Building Mix** - Buildings from NA, EU, UK, Germany, France, Netherlands, Eastern Europe, Japan, China spawn together
+		- **Vanilla Spawning Logic** - Buildings still respect demand, land value, and desirability
+		- **Original Zones Preserved** - EU/NA zones continue to work normally
+		- **Region Toggles** - Enable/disable specific regions in mod settings
+		- **PDX Mods Compatible** - No Harmony patches required
 
-## How It Works
+		## How It Works
 
-Universal zones combine buildings from ALL installed regional content packs. When you paint a universal zone, the game's spawn system can select from buildings across all enabled regions, creating diverse streetscapes.
+		Universal zones combine buildings from ALL installed regional content packs. When you paint a universal zone, the game's spawn system can select from buildings across all enabled regions, creating diverse streetscapes.
 
-## Alpha Test Disclaimer
+		## Alpha Test Disclaimer
 
-This is an experimental release. Expect issues, bugs, and potential game crashes. Always backup your saves. Use at your own risk.
+		This is an experimental release. Expect issues, bugs, and potential game crashes. Always backup your saves. Use at your own risk. Please dont use in important cities yet! It may break things.
 
-## Reporting Issues
+		## Reporting Issues
 
-Please report bugs with these logs:
-- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
-- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Player.log`
+		Please report bugs with these logs:
+		- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
+		- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Player.log`
 
-## Credits
+		## Credits
 
-Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding community!
+		Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding community!
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
@@ -50,7 +50,7 @@ Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/universal-zoning-system-uzs.1882199/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.1.2" />
+	<ModVersion Value="0.1.3" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
@@ -59,6 +59,15 @@ Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
 	<ChangeLog>
+## Version 0.1.3 (Alpha) - Performance Update
+- **PERFORMANCE**: Pre-caches universal zone prefabs by ZoneType
+- **PERFORMANCE**: Caches zone classifications to avoid repeated lookups
+- **PERFORMANCE**: Uses StringComparer.Ordinal for faster HashSet operations
+- **PERFORMANCE**: Uses IndexOf with OrdinalIgnoreCase instead of ToLowerInvariant()
+- **PERFORMANCE**: Reduced logging during iteration (only first 3 clones)
+- **PERFORMANCE**: Added timing measurement to track cloning duration
+- Compact summary logs for better readability
+
 ## Version 0.1.2 (Alpha)
 - Fixed ExtraLib compatibility crash by cloning existing UI category instead of creating from scratch
 - UI category now properly inherits all required buffers and components
@@ -80,5 +89,5 @@ Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/redlabracer/Universal-Zoning-System-UZS-Test" />
 	<!--Supported values Public, Private, Unlisted-->
-	<AccessLevel Value="Unlisted" />
+	<AccessLevel Value="Public" />
 </Publish>
