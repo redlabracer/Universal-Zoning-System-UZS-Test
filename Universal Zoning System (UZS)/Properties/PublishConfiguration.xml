@@ -1,37 +1,84 @@
 ﻿<Publish>
 	<!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
-	<ModId Value="" />
+	<ModId Value="127928" />
 	<!--Name of the mod to display to players-->
-	<DisplayName Value="Universal_Zoning_System__UZS_" />
+	<DisplayName Value="[Alpha] Universal Zoning System (UZS)" />
 	<!--Short description of the mod-->
-	<ShortDescription Value="This is a short description" />
+	<ShortDescription Value="Universal zoning - mix buildings from all regions (NA, EU, Japan, China, etc.) in unified zone types!" />
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
 	<!--LongDescription Value="This is a long description" /-->
 	<LongDescription>
-This is a long description
+# Universal Zoning System (UZS)
+
+Create diverse, multi-cultural cities by mixing architectural styles from all regions in unified zone types!
+
+**Now in ALPHA TESTING - Volunteers needed!**
+
+## Features
+
+- **10 Universal Zone Types** - Low/Medium/High Residential, Row Houses, Low Rent, Mixed Use, Low/High Commercial, Low/High Office
+- **Multi-Region Building Mix** - Buildings from NA, EU, UK, Germany, France, Netherlands, Eastern Europe, Japan, China spawn together
+- **Vanilla Spawning Logic** - Buildings still respect demand, land value, and desirability
+- **Original Zones Preserved** - EU/NA zones continue to work normally
+- **Region Toggles** - Enable/disable specific regions in mod settings
+- **PDX Mods Compatible** - No Harmony patches required
+
+## How It Works
+
+Universal zones combine buildings from ALL installed regional content packs. When you paint a universal zone, the game's spawn system can select from buildings across all enabled regions, creating diverse streetscapes.
+
+## Alpha Test Disclaimer
+
+This is an experimental release. Expect issues, bugs, and potential game crashes. Always backup your saves. Use at your own risk.
+
+## Reporting Issues
+
+Please report bugs with these logs:
+- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
+- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Player.log`
+
+## Credits
+
+Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding community!
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
 	<!--Screenshot, can be set multiple times-->
 	<Screenshot Value="" />
 	<!--Tag, can be set multiple times-->
-	<Tag Value="" />
+	<Tag Value="Code Mod" />
 	<!--Link to the forum post where the mod can be discussed-->
-	<ForumLink Value="" />
+	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/universal-zoning-system-uzs.1882199/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.0" />
+	<ModVersion Value="0.1.2" />
 	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.0.*" />
+	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
-	<ChangeLog Value="" />
-	<!--<ChangeLog>
-	</ChangeLog>-->
+	<ChangeLog>
+## Version 0.1.2 (Alpha)
+- Fixed ExtraLib compatibility crash by cloning existing UI category instead of creating from scratch
+- UI category now properly inherits all required buffers and components
+- Added fallback if no template category is found
+
+## Version 0.1.1 (Alpha)
+- Fixed crash when creating UI category (UIAssetCategoryPrefab components initialization)
+- Fixed Low Rent buildings spawning in Low Residential zones
+- Improved zone type classification for Row Housing
+- Code cleanup: removed unused systems (BuildingCollector, BuildingMatcher, etc.)
+
+## Version 0.1.0 (Alpha)
+- Initial alpha release
+- 10 Universal zone types
+- Support for all regional building packs
+- Region toggle settings
+- Strict zone type filtering (Low Rent separated from Low Residential)
+	</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
-	<ExternalLink Type="" Url="" />
+	<ExternalLink Type="github" Url="https://github.com/redlabracer/Universal-Zoning-System-UZS-Test" />
 	<!--Supported values Public, Private, Unlisted-->
-	<AccessLevel Value="Public" />
+	<AccessLevel Value="Unlisted" />
 </Publish>
