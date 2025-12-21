@@ -23,7 +23,6 @@ namespace UniversalZoningSystem
         private ToolSystem _toolSystem;
         private ZoneToolSystem _zoneToolSystem;
         
-        // Cache of vanilla zone prefabs by our zone type enum
         private Dictionary<ZoneType, ZonePrefab> _vanillaZonePrefabs;
         private bool _cacheInitialized;
 
@@ -38,7 +37,6 @@ namespace UniversalZoningSystem
                 _zoneToolSystem = World.GetOrCreateSystemManaged<ZoneToolSystem>();
                 _vanillaZonePrefabs = new Dictionary<ZoneType, ZonePrefab>();
 
-                // Trigger binding - UI calls this to select a zone
                 AddBinding(new TriggerBinding<string>(
                     "universalZoning",
                     "selectZone",
@@ -55,7 +53,6 @@ namespace UniversalZoningSystem
 
         protected override void OnUpdate()
         {
-            // Initialize cache once zone prefabs are available
             if (!_cacheInitialized)
             {
                 InitializeZonePrefabCache();
@@ -76,16 +73,13 @@ namespace UniversalZoningSystem
                     if (!_prefabSystem.TryGetPrefab<ZonePrefab>(entity, out var zonePrefab))
                         continue;
 
-                    // Skip our custom prefabs
                     if (zonePrefab.name.StartsWith("UZS_"))
                         continue;
 
-                    // Use name-based classification to map to our zone types
                     var classification = UniversalZonePrefabSystem.GetZoneClassification(zonePrefab.name);
                     if (classification == null)
                         continue;
 
-                    // Prefer NA or EU prefabs as they're commonly used
                     bool shouldUse = !_vanillaZonePrefabs.ContainsKey(classification.ZoneType);
                     if (!shouldUse && (zonePrefab.name.StartsWith("NA ") || zonePrefab.name.StartsWith("EU ")))
                     {
@@ -121,7 +115,6 @@ namespace UniversalZoningSystem
 
             Log.Info($"SelectZone called with: {zoneId}");
 
-            // Map the universal zone ID to our zone type
             var zoneType = GetZoneTypeFromId(zoneId);
             if (zoneType == ZoneType.None)
             {
@@ -129,7 +122,6 @@ namespace UniversalZoningSystem
                 return;
             }
 
-            // Get a vanilla zone prefab for this type
             if (!_vanillaZonePrefabs.TryGetValue(zoneType, out var zonePrefab))
             {
                 Log.Warn($"No vanilla zone prefab found for type: {zoneType}");
@@ -138,7 +130,6 @@ namespace UniversalZoningSystem
 
             Log.Info($"Using vanilla zone prefab: {zonePrefab.name} for type {zoneType}");
 
-            // Activate zone tool with this prefab
             try
             {
                 _toolSystem.activeTool = _zoneToolSystem;

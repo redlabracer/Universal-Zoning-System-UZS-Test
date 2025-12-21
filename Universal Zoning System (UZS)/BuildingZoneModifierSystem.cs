@@ -40,10 +40,9 @@ namespace UniversalZoningSystem
         private bool _initialized;
         private int _frameDelay;
 
-        // Track created duplicate prefabs for cleanup
+
         private readonly List<BuildingPrefab> _createdDuplicates = new List<BuildingPrefab>();
         
-        // Statistics
         private readonly Dictionary<string, int> _duplicatesByZone = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _duplicatesByRegion = new Dictionary<string, int>();
 
@@ -83,15 +82,12 @@ namespace UniversalZoningSystem
             if (_initialized)
                 return;
 
-            // Wait for universal zone prefabs to be created
             if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
                 return;
 
-            // Wait for buildings to load
             if (_buildingQuery.IsEmptyIgnoreFilter)
                 return;
 
-            // Frame delay to ensure everything is loaded
             _frameDelay++;
             if (_frameDelay < 25)
                 return;
@@ -104,14 +100,12 @@ namespace UniversalZoningSystem
             if (_initialized)
                 return;
 
-            // Need zones to be created first
             if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
             {
                 Log.Info("Waiting for universal zones to be created...");
                 return;
             }
 
-            // Need buildings to be loaded
             if (_buildingQuery.IsEmptyIgnoreFilter)
             {
                 Log.Info("Waiting for buildings to load...");
@@ -135,7 +129,6 @@ namespace UniversalZoningSystem
             var startTime = DateTime.Now;
             Log.Info("=== Creating Building Clones for Universal Zones ===");
 
-            // OPTIMIZATION 1: Pre-cache universal zone prefabs by ZoneType
             var universalZonePrefabs = new Dictionary<ZoneType, ZonePrefab>();
             foreach (var definition in ZoneDefinitions.AllZones)
             {
@@ -152,7 +145,6 @@ namespace UniversalZoningSystem
                 return;
             }
 
-            // OPTIMIZATION 2: Use StringComparer.Ordinal for faster HashSet lookups
             var existingPrefabNames = new HashSet<string>(StringComparer.Ordinal);
             var allPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>());
             var allPrefabEntities = allPrefabsQuery.ToEntityArray(Allocator.Temp);
@@ -169,7 +161,6 @@ namespace UniversalZoningSystem
             var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
             var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
 
-            // OPTIMIZATION 3: Cache zone classifications to avoid repeated lookups
             var zoneClassificationCache = new Dictionary<Entity, ZoneClassification>();
 
             try
@@ -193,14 +184,12 @@ namespace UniversalZoningSystem
                     if (buildingPrefab == null)
                         continue;
 
-                    // Skip if already a Universal clone
                     if (buildingPrefab.name.StartsWith("Universal_"))
                     {
                         skippedAlreadyCloned++;
                         continue;
                     }
 
-                    // OPTIMIZATION 4: Use cached zone classification
                     if (!zoneClassificationCache.TryGetValue(spawnData.m_ZonePrefab, out var classification))
                     {
                         if (_prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var originalZonePrefab))
@@ -216,7 +205,6 @@ namespace UniversalZoningSystem
                         continue;
                     }
 
-                    // Check region
                     var region = RegionPrefixManager.GetRegionFromPrefabName(buildingPrefab.name);
                     if (!IsRegionEnabled(region))
                     {
@@ -224,23 +212,19 @@ namespace UniversalZoningSystem
                         continue;
                     }
 
-                    // Validate building name matches zone type
                     if (!IsBuildingValidForZoneType(buildingPrefab.name, classification.ZoneType))
                     {
                         skippedInvalidForZone++;
                         continue;
                     }
 
-                    // OPTIMIZATION 5: Use pre-cached universal zone prefab
                     if (!universalZonePrefabs.TryGetValue(classification.ZoneType, out var universalZonePrefab))
                         continue;
 
-                    // Check if clone already exists
                     string cloneName = "Universal_" + buildingPrefab.name;
                     if (existingPrefabNames.Contains(cloneName))
                         continue;
 
-                    // CLONE the prefab
                     var newPrefab = UnityEngine.Object.Instantiate(buildingPrefab);
                     newPrefab.name = cloneName;
 
@@ -248,18 +232,28 @@ namespace UniversalZoningSystem
                     {
                         spawnable.m_ZoneType = universalZonePrefab;
 
-                        _prefabSystem.AddPrefab(newPrefab);
+                        try
+                        {
+                            _prefabSystem.AddPrefab(newPrefab);
+                        }
+                        catch (Exception addEx)
+                        {
+                            // The game's logging system can throw NullReferenceException when logging warnings
+                            // This is a known issue in Colossal.Logging.UnityLogger - ignore and continue
+                            if (!(addEx is NullReferenceException))
+                            {
+                                Log.Warn($"AddPrefab failed for {cloneName}: {addEx.Message}");
+                            }
+                        }
                         _createdDuplicates.Add(newPrefab);
                         existingPrefabNames.Add(cloneName);
                         totalCloned++;
 
-                        // OPTIMIZATION 6: Only log first 3 clones
                         if (totalCloned <= 3)
                         {
                             Log.Info($"  Cloned: {cloneName} -> {universalZonePrefab.name}");
                         }
 
-                        // Track statistics
                         var zoneKey = classification.ZoneType.ToString();
                         if (!_duplicatesByZone.ContainsKey(zoneKey))
                             _duplicatesByZone[zoneKey] = 0;
@@ -280,7 +274,6 @@ namespace UniversalZoningSystem
                 Log.Info($"Total cloned: {totalCloned}, Cached zones: {zoneClassificationCache.Count}");
                 Log.Info($"Skipped: AlreadyCloned={skippedAlreadyCloned}, NoClass={skippedNoClassification}, RegionOff={skippedRegionDisabled}, InvalidZone={skippedInvalidForZone}");
                 
-                // OPTIMIZATION 7: Compact summary logs
                 if (_duplicatesByZone.Count > 0)
                 {
                     Log.Info($"By Zone: {string.Join(", ", _duplicatesByZone.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}");
@@ -306,7 +299,6 @@ namespace UniversalZoningSystem
             switch (zoneType)
             {
                 case ZoneType.ResidentialLow:
-                    // Exclude buildings with "lowrent", "medium", "high", "mixed" in name
                     if (ContainsIgnoreCase(buildingName, "lowrent") || ContainsIgnoreCase(buildingName, "low_rent"))
                         return false;
                     if (ContainsIgnoreCase(buildingName, "mixed"))
@@ -384,7 +376,6 @@ namespace UniversalZoningSystem
 
         protected override void OnDestroy()
         {
-            // Clean up created duplicates
             foreach (var prefab in _createdDuplicates)
             {
                 if (prefab != null)

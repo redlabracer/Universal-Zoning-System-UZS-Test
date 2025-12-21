@@ -7,6 +7,7 @@ using Game.SceneFlow;
 using Unity.Entities;
 using UniversalZoningSystem.Localization;
 using UniversalZoningSystem.Settings;
+using UniversalZoningSystem.Systems;
 
 namespace UniversalZoningSystem
 {
@@ -34,38 +35,31 @@ namespace UniversalZoningSystem
                 Log.Info($"Mod location: {asset.path}");
             }
 
-            // Initialize settings
             Settings = new ModSettings(this);
             Settings.RegisterInOptionsUI();
             AssetDatabase.global.LoadSettings(nameof(UniversalZoningSystem), Settings, new ModSettings(this));
 
-            // Initialize localization
             _localizationManager = new LocalizationManager(Settings);
             GameManager.instance.localizationManager.AddSource("en-US", _localizationManager);
 
-            // Create systems directly like StarQ's AssetUIManager does
-            // This ensures they're created during mod loading, not later
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneUISystem>();
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneBindingSystem>();
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<DistrictSettingsUISystem>();
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UZSPolicySystem>();
             
-            // Register systems with update phases
-            // UI System - use GameSimulation phase which runs earlier
             updateSystem.UpdateAt<UniversalZoneUISystem>(SystemUpdatePhase.GameSimulation);
             
-            // UI Binding system - needs to run during UIUpdate phase
             updateSystem.UpdateAt<UniversalZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<DistrictSettingsUISystem>(SystemUpdatePhase.UIUpdate);
             Log.Info("UniversalZoneBindingSystem registered with UIUpdate phase.");
             
-            // Core systems run during PrefabUpdate
-            // UniversalZonePrefabSystem - caches zone templates and classifies zones
             updateSystem.UpdateAt<UniversalZonePrefabSystem>(SystemUpdatePhase.PrefabUpdate);
-            
-            // Building modifier must run after zone prefabs are created
-            // This is the main system that clones buildings for universal zones
+            updateSystem.UpdateAt<UZSPolicySystem>(SystemUpdatePhase.PrefabUpdate);
             updateSystem.UpdateAt<BuildingZoneModifierSystem>(SystemUpdatePhase.PrefabUpdate);
-            
-            // Debug/diagnostic systems (can be disabled in production)
+            updateSystem.UpdateAt<UniversalBuildingDataSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAt<DistrictSpawnEnforcementSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<DebugSystem>(SystemUpdatePhase.PrefabUpdate);
+            updateSystem.UpdateAt<PolicyExplorerSystem>(SystemUpdatePhase.PrefabUpdate);
 
             Log.Info("Universal Zoning System loaded successfully.");
         }

@@ -1,0 +1,104 @@
+/* Universal Zoning System - District Settings Styles */
+
+.uzs-district-settings {
+    background-color: rgba(30, 35, 45, 0.95);
+    border-radius: 8rem;
+    margin: 8rem 0;
+    overflow: hidden;
+    border: 1rem solid rgba(255, 255, 255, 0.1);
+}
+
+.uzs-district-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12rem 16rem;
+    cursor: pointer;
+    background-color: rgba(50, 55, 65, 0.8);
+    transition: background-color 0.2s ease;
+}
+
+.uzs-district-header:hover {
+    background-color: rgba(60, 65, 75, 0.9);
+}
+
+.uzs-district-title {
+    font-size: 14rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.uzs-expand-icon {
+    font-size: 10rem;
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 0.2s ease;
+}
+
+.uzs-expand-icon.expanded {
+    transform: rotate(180deg);
+}
+
+.uzs-district-content {
+    padding: 16rem;
+}
+
+.uzs-section {
+    margin-bottom: 16rem;
+}
+
+.uzs-section:last-child {
+    margin-bottom: 0;
+}
+
+.uzs-section-title {
+    font-size: 12rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5rem;
+}
+
+.uzs-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8rem;
+}
+
+.uzs-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8rem;
+    padding: 8rem 10rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 12rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.uzs-checkbox-label:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.uzs-checkbox-label input[type="checkbox"] {
+    width: 16rem;
+    height: 16rem;
+    cursor: pointer;
+    accent-color: #4a9eff;
+}
+
+.uzs-checkbox-label span {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsive adjustments for smaller panels */
+@media (max-width: 400rem) {
+    .uzs-options-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

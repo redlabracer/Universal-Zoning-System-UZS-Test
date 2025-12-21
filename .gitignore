@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore UZS specific log files
+current_log.txt
+latest_log.txt
+temp_log.txt
+uzslog.txt

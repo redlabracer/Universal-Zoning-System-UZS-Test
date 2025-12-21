@@ -8,6 +8,7 @@
     "dev": "node build.mjs --watch"
   },
   "devDependencies": {
-    "esbuild": "^0.19.0"
+    "esbuild": "^0.19.0",
+    "esbuild-sass-plugin": "^2.16.0"
   }
 }

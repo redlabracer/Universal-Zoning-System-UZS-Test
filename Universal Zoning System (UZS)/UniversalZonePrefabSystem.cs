@@ -111,7 +111,6 @@ namespace UniversalZoningSystem
                 ComponentType.ReadOnly<PrefabData>()
             );
 
-            // Initialize zone type dictionaries
             foreach (ZoneType zoneType in Enum.GetValues(typeof(ZoneType)))
             {
                 _zonesByType[zoneType] = new List<ZonePrefab>();
@@ -126,11 +125,9 @@ namespace UniversalZoningSystem
             if (_initialized)
                 return;
 
-            // Wait until zones and buildings are loaded
             if (_zoneQuery.IsEmptyIgnoreFilter || _buildingQuery.IsEmptyIgnoreFilter)
                 return;
 
-            // Add a small frame delay to ensure all prefabs are fully loaded
             _frameDelay++;
             if (_frameDelay < 10)
                 return;
@@ -139,16 +136,9 @@ namespace UniversalZoningSystem
             {
                 Log.Info("Starting Universal Zone creation...");
                 
-                // Step 1: Cache all zone templates
                 CacheZoneTemplates();
-                
-                // Step 2: Collect all buildings and classify them
                 CollectAndClassifyBuildings();
-                
-                // Step 3: Modify zone prefabs to include cross-region buildings
                 ModifyZonePrefabsForUniversalAccess();
-                
-                // Step 4: Log results
                 LogResults();
                 
                 _initialized = true;
@@ -176,7 +166,6 @@ namespace UniversalZoningSystem
                         {
                             _zoneTemplates[name] = zonePrefab;
                             
-                            // Classify and store by zone type
                             var classification = GetZoneClassification(name);
                             if (classification != null)
                             {
@@ -227,14 +216,11 @@ namespace UniversalZoningSystem
                     if (classification == null)
                         continue;
 
-                    // Check if this region is enabled in settings
                     var region = RegionPrefixManager.GetRegionFromPrefabName(buildingPrefab.name);
                     
-                    // Add to our building collection
                     _buildingsByZoneType[classification.ZoneType].Add(buildingPrefab);
                     totalBuildings++;
 
-                    // Track statistics
                     if (!regionCounts.ContainsKey(region))
                         regionCounts[region] = 0;
                     regionCounts[region]++;
@@ -266,8 +252,6 @@ namespace UniversalZoningSystem
                 if (allBuildingsForType.Count == 0)
                     continue;
 
-                // For each zone prefab of this type, we want to make all buildings from
-                // other regions available to it
                 foreach (var zonePrefab in zonePrefabs)
                 {
                     var addedCount = AddBuildingsToZone(zonePrefab, allBuildingsForType, zoneType);
@@ -293,7 +277,6 @@ namespace UniversalZoningSystem
                 
                 foreach (var building in buildings)
                 {
-                    // Check if building's region is enabled
                     var buildingName = building.name.ToUpperInvariant();
                     bool isEnabled = enabledPrefixes.Count == 0; // If no settings, include all
                     
@@ -306,7 +289,6 @@ namespace UniversalZoningSystem
                         }
                     }
 
-                    // Also include generic buildings (no regional prefix)
                     var region = RegionPrefixManager.GetRegionFromPrefabName(building.name);
                     if (region == "Generic")
                         isEnabled = true;
@@ -314,7 +296,6 @@ namespace UniversalZoningSystem
                     if (!isEnabled)
                         continue;
 
-                    // Try to add this building to the zone's spawnable list
                     if (TryAddBuildingToZoneSpawnList(zonePrefab, building))
                     {
                         addedCount++;
@@ -333,18 +314,9 @@ namespace UniversalZoningSystem
         {
             try
             {
-                // Access the zone's building list component if it exists
-                // This modifies the SpawnableBuildingData on the building to reference this zone
                 var entity = _prefabSystem.GetEntity(building);
                 if (entity == Entity.Null)
                     return false;
-
-                // The building already has a zone reference through SpawnableBuildingData
-                // For universal zoning, we need to make the zone accept buildings from other zones
-                // This is done by modifying the zone's acceptance criteria or the building's zone reference
-
-                // For now, we'll track this association in our BuildingMatcher
-                // The actual spawning modification requires deeper integration
                 
                 return true;
             }

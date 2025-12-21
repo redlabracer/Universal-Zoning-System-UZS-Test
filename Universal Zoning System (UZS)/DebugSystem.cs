@@ -36,7 +36,8 @@ namespace UniversalZoningSystem
                 ComponentType.ReadOnly<PrefabData>()
             );
 
-            Enabled = true; // Enable for diagnostic logging
+
+            Enabled = true;
         }
 
         protected override void OnUpdate()
@@ -49,16 +50,13 @@ namespace UniversalZoningSystem
 
             _frameDelay++;
             
-            // Wait a long time to ensure all systems have run
-            // Building duplication takes several minutes!
+            // Long delay: building duplication can take minutes
             if (_frameDelay < 500)
                 return;
 
-            // Also wait for zone UI system to have created zones
             if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
                 return;
 
-            // Wait for data to be loaded
             if (_buildingQuery.IsEmptyIgnoreFilter)
                 return;
 
@@ -93,7 +91,6 @@ namespace UniversalZoningSystem
                         continue;
                     }
 
-                    // Log all components on the zone entity
                     Log.Info($"  {definition.Id} (Entity: {zoneEntity.Index}) components:");
                     
                     if (EntityManager.HasComponent<ZoneData>(zoneEntity))
@@ -111,12 +108,19 @@ namespace UniversalZoningSystem
                         Log.Info($"    Has PrefabData");
                     }
 
-                    // Check for any buffer components
                     var componentTypes = EntityManager.GetComponentTypes(zoneEntity);
                     Log.Info($"    All components ({componentTypes.Length}):");
                     foreach (var ct in componentTypes)
                     {
-                        Log.Info($"      - {ct.GetManagedType()?.Name ?? ct.ToString()}");
+                        try
+                        {
+                            var managedType = ct.GetManagedType();
+                            var typeName = managedType != null ? managedType.Name : $"UnmanagedType({ct.TypeIndex})";
+                            Log.Info($"      - {typeName}");
+                        }
+                        catch
+                        {
+                        }
                     }
                     componentTypes.Dispose();
 
@@ -135,7 +139,6 @@ namespace UniversalZoningSystem
                         {
                             matchingBuildings++;
                             
-                            // Log first few matches
                             if (matchingBuildings <= 3)
                             {
                                 if (_prefabSystem.TryGetPrefab<BuildingPrefab>(buildingEntity, out var prefab))

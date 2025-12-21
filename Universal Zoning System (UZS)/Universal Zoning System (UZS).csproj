@@ -89,6 +89,7 @@
 		<Compile Remove="UI\**\*" />
 	</ItemGroup>
 	<ItemGroup>
+	  <None Include="UI\src\components\DistrictSettingsPanel.tsx" />
 	  <None Include="UI\src\components\UniversalZoneToolOptions.tsx" />
 	</ItemGroup>
 	<ItemGroup>

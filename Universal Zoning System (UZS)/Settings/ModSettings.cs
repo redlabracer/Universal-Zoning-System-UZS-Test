@@ -9,12 +9,13 @@ namespace UniversalZoningSystem.Settings
     /// Mod settings for the Universal Zoning System.
     /// </summary>
     [FileLocation(nameof(UniversalZoningSystem))]
-    [SettingsUIGroupOrder(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
-    [SettingsUIShowGroupName(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIGroupOrder(RegionSettingsGroup, BuildingTypeSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIShowGroupName(RegionSettingsGroup, BuildingTypeSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
     public class ModSettings : ModSetting
     {
         public const string MainSection = "Main";
         public const string RegionSettingsGroup = "RegionSettings";
+        public const string BuildingTypeSettingsGroup = "BuildingTypeSettings";
         public const string WeightingSettingsGroup = "WeightingSettings";
         public const string AdvancedSettingsGroup = "AdvancedSettings";
 
@@ -23,69 +24,56 @@ namespace UniversalZoningSystem.Settings
             SetDefaults();
         }
 
+
         #region Region Settings
 
-        /// <summary>
-        /// Enable or disable North American buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableNorthAmerica { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable European buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableEuropean { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable UK buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableUnitedKingdom { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable German buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableGermany { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable French buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableFrance { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable Netherlands buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableNetherlands { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable Eastern European buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableEasternEurope { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable Japanese buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableJapan { get; set; } = true;
 
-        /// <summary>
-        /// Enable or disable Chinese buildings.
-        /// </summary>
         [SettingsUISection(MainSection, RegionSettingsGroup)]
         public bool EnableChina { get; set; } = true;
 
         #endregion
 
+        #region Building Type Settings
+
+        [SettingsUISection(MainSection, BuildingTypeSettingsGroup)]
+        public bool EnableDetachedHouses { get; set; } = true;
+
+        [SettingsUISection(MainSection, BuildingTypeSettingsGroup)]
+        public bool EnableAttachedHouses { get; set; } = true;
+
+        [SettingsUISection(MainSection, BuildingTypeSettingsGroup)]
+        public bool EnableApartments { get; set; } = true;
+
+        [SettingsUISection(MainSection, BuildingTypeSettingsGroup)]
+        public bool EnableHighRise { get; set; } = true;
+
+        #endregion
+
         #region Weighting Settings
 
-        /// <summary>
-        /// Use equal region weighting (each region has equal chance regardless of building count).
-        /// </summary>
         [SettingsUISection(MainSection, WeightingSettingsGroup)]
         public bool UseEqualRegionWeighting { get; set; } = true;
 
@@ -93,15 +81,9 @@ namespace UniversalZoningSystem.Settings
 
         #region Advanced Settings
 
-        /// <summary>
-        /// Enable verbose logging for debugging.
-        /// </summary>
         [SettingsUISection(MainSection, AdvancedSettingsGroup)]
         public bool EnableVerboseLogging { get; set; } = false;
 
-        /// <summary>
-        /// Button to reset all settings to defaults.
-        /// </summary>
         [SettingsUISection(MainSection, AdvancedSettingsGroup)]
         [SettingsUIButton]
         public bool ResetToDefaults
@@ -115,9 +97,6 @@ namespace UniversalZoningSystem.Settings
 
         #endregion
 
-        /// <summary>
-        /// Reset all settings to defaults.
-        /// </summary>
         public override void SetDefaults()
         {
             EnableNorthAmerica = true;
@@ -129,13 +108,14 @@ namespace UniversalZoningSystem.Settings
             EnableEasternEurope = true;
             EnableJapan = true;
             EnableChina = true;
+            EnableDetachedHouses = true;
+            EnableAttachedHouses = true;
+            EnableApartments = true;
+            EnableHighRise = true;
             UseEqualRegionWeighting = true;
             EnableVerboseLogging = false;
         }
 
-        /// <summary>
-        /// Gets a list of enabled region prefixes based on settings.
-        /// </summary>
         public List<string> GetEnabledRegionPrefixes()
         {
             var prefixes = new List<string>();
