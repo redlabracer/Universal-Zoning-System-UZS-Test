@@ -1,26 +1,12 @@
 /**
  * Universal Zoning System - UI Module for Cities: Skylines II
  * 
- * NOTE: District-specific UI integration is complex in CS2.
- * For now, this module provides basic logging.
- * District settings are available via the C# bindings for future UI development.
+ * This module is intentionally minimal - the universal zones should appear
+ * as a new category tab in the native zone toolbar, not as a custom panel.
  */
 
-import { ModRegistrar } from "cs2/modding";
-import "./styles/districtSettings.scss";
+export default function register(registry: any): void {
+    console.log('[UZS] UI module loaded - zones should appear in native toolbar');
+}
 
-// Register the mod UI components
-const register: ModRegistrar = (moduleRegistry) => {
-    console.log('[UZS] UI module loaded');
-    console.log('[UZS] District settings backend is ready - UI integration pending');
-    
-    // The C# backend exposes these bindings:
-    // - universalZoningDistrict.getDistrictSettings(entity) -> returns JSON settings
-    // - universalZoningDistrict.setDistrictSetting(entity, key, value) -> updates a setting
-    // 
-    // Future: Integrate with district info panel when CS2 modding API stabilizes
-};
-
-export default register;
-
-export const hasCSS = true;
+export const hasCSS = false;

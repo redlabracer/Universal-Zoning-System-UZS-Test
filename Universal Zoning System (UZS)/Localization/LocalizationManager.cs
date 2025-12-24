@@ -63,7 +63,6 @@ namespace UniversalZoningSystem.Localization
             yield return new KeyValuePair<string, string>("Options.SECTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod]", "Universal Zoning System");
 
             yield return new KeyValuePair<string, string>("Options.GROUP[Universal Zoning System (UZS).UniversalZoningSystem.Mod.RegionSettings]", "Region Settings");
-            yield return new KeyValuePair<string, string>("Options.GROUP[Universal Zoning System (UZS).UniversalZoningSystem.Mod.BuildingTypeSettings]", "Building Type Settings");
             yield return new KeyValuePair<string, string>("Options.GROUP[Universal Zoning System (UZS).UniversalZoningSystem.Mod.WeightingSettings]", "Weighting Settings");
             yield return new KeyValuePair<string, string>("Options.GROUP[Universal Zoning System (UZS).UniversalZoningSystem.Mod.AdvancedSettings]", "Advanced Settings");
 
@@ -94,19 +93,6 @@ namespace UniversalZoningSystem.Localization
             yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableChina]", "China");
             yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableChina]", "Include Chinese buildings");
 
-            // Building Type Settings
-            yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableDetachedHouses]", "Detached Houses");
-            yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableDetachedHouses]", "Single-family detached homes");
-
-            yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableAttachedHouses]", "Attached/Row Houses");
-            yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableAttachedHouses]", "Terraced and row houses");
-
-            yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableApartments]", "Apartments");
-            yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableApartments]", "Medium-density apartment buildings");
-
-            yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableHighRise]", "High-Rise Towers");
-            yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.EnableHighRise]", "Tall residential and office towers");
-
             yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.UseEqualRegionWeighting]", "Equal Region Weighting");
             yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.UseEqualRegionWeighting]", "Give each region equal chance");
 
@@ -115,47 +101,6 @@ namespace UniversalZoningSystem.Localization
 
             yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ResetToDefaults]", "Reset to Defaults");
             yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ResetToDefaults]", "Reset all settings");
-
-            // UZS District Policies
-            // Try multiple key formats to ensure localization works
-            
-            // Format 1: Assets.NAME (standard asset format)
-            yield return new KeyValuePair<string, string>("Assets.NAME[UZS No Attached Houses]", "UZS: No Attached Houses");
-            yield return new KeyValuePair<string, string>("Assets.DESCRIPTION[UZS No Attached Houses]", "Prevents row houses and terraced homes from spawning in Universal Zones");
-            yield return new KeyValuePair<string, string>("Assets.NAME[UZS No High-Rise]", "UZS: No High-Rise");
-            yield return new KeyValuePair<string, string>("Assets.DESCRIPTION[UZS No High-Rise]", "Prevents tall towers from spawning in Universal Zones");
-            yield return new KeyValuePair<string, string>("Assets.NAME[UZS Detached Only]", "UZS: Detached Houses Only");
-            yield return new KeyValuePair<string, string>("Assets.DESCRIPTION[UZS Detached Only]", "Only single-family detached houses allowed in Universal Zones");
-            yield return new KeyValuePair<string, string>("Assets.NAME[UZS European Only]", "UZS: European Style Only");
-            yield return new KeyValuePair<string, string>("Assets.DESCRIPTION[UZS European Only]", "Only European architecture allowed in Universal Zones");
-            yield return new KeyValuePair<string, string>("Assets.NAME[UZS North America Only]", "UZS: North American Style Only");
-            yield return new KeyValuePair<string, string>("Assets.DESCRIPTION[UZS North America Only]", "Only North American architecture allowed in Universal Zones");
-
-            // Format 2: Policies.POLICY format (may be used by district policies)
-            yield return new KeyValuePair<string, string>("Policies.POLICY[UZS No Attached Houses]", "UZS: No Attached Houses");
-            yield return new KeyValuePair<string, string>("Policies.POLICY_DESCRIPTION[UZS No Attached Houses]", "Prevents row houses and terraced homes from spawning");
-            yield return new KeyValuePair<string, string>("Policies.POLICY[UZS No High-Rise]", "UZS: No High-Rise");
-            yield return new KeyValuePair<string, string>("Policies.POLICY_DESCRIPTION[UZS No High-Rise]", "Prevents tall towers from spawning");
-            yield return new KeyValuePair<string, string>("Policies.POLICY[UZS Detached Only]", "UZS: Detached Only");
-            yield return new KeyValuePair<string, string>("Policies.POLICY_DESCRIPTION[UZS Detached Only]", "Only detached houses allowed");
-            yield return new KeyValuePair<string, string>("Policies.POLICY[UZS European Only]", "UZS: European Only");
-            yield return new KeyValuePair<string, string>("Policies.POLICY_DESCRIPTION[UZS European Only]", "Only European architecture");
-            yield return new KeyValuePair<string, string>("Policies.POLICY[UZS North America Only]", "UZS: NA Only");
-            yield return new KeyValuePair<string, string>("Policies.POLICY_DESCRIPTION[UZS North America Only]", "Only North American architecture");
-
-            // Format 3: Policies.NAME format (alternative)
-            yield return new KeyValuePair<string, string>("Policies.NAME[UZS No Attached Houses]", "UZS: No Attached Houses");
-            yield return new KeyValuePair<string, string>("Policies.NAME[UZS No High-Rise]", "UZS: No High-Rise");
-            yield return new KeyValuePair<string, string>("Policies.NAME[UZS Detached Only]", "UZS: Detached Only");
-            yield return new KeyValuePair<string, string>("Policies.NAME[UZS European Only]", "UZS: European Only");
-            yield return new KeyValuePair<string, string>("Policies.NAME[UZS North America Only]", "UZS: NA Only");
-
-            // Format 4: SelectedInfoPanel format (used by info panels)
-            yield return new KeyValuePair<string, string>("SelectedInfoPanel.POLICY_TITLE[UZS No Attached Houses]", "UZS: No Attached Houses");
-            yield return new KeyValuePair<string, string>("SelectedInfoPanel.POLICY_TITLE[UZS No High-Rise]", "UZS: No High-Rise");
-            yield return new KeyValuePair<string, string>("SelectedInfoPanel.POLICY_TITLE[UZS Detached Only]", "UZS: Detached Only");
-            yield return new KeyValuePair<string, string>("SelectedInfoPanel.POLICY_TITLE[UZS European Only]", "UZS: European Only");
-            yield return new KeyValuePair<string, string>("SelectedInfoPanel.POLICY_TITLE[UZS North America Only]", "UZS: NA Only");
         }
 
         public void Unload()
