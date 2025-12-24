@@ -10,36 +10,68 @@
 	<LongDescription>
 		# Universal Zoning System (UZS)
 
-		Create diverse, multi-cultural cities by mixing architectural styles from all regions in unified zone types!
+		I started working on **Universal Zoning System (UZS)** because I honestly missed the variety in my districts. This mod basically lets you paint zones that pull buildings from *every* installed content pack—NA, EU, Japan, whatever you've got—randomly within the same block.
 
-		**Now in ALPHA TESTING - Volunteers needed!**
+		Instead of locking a district to just one style, this lets you mix North American suburbs, European row houses, and Asian assets side-by-side.
 
-		## Features
+		**ALPHA STATUS: Needs Testing!**
 
-		- **10 Universal Zone Types** - Low/Medium/High Residential, Row Houses, Low Rent, Mixed Use, Low/High Commercial, Low/High Office
-		- **Multi-Region Building Mix** - Buildings from NA, EU, UK, Germany, France, Netherlands, Eastern Europe, Japan, China spawn together
-		- **Vanilla Spawning Logic** - Buildings still respect demand, land value, and desirability
-		- **Original Zones Preserved** - EU/NA zones continue to work normally
-		- **Region Toggles** - Enable/disable specific regions in mod settings
-		- **PDX Mods Compatible** - No Harmony patches required
+		Just a heads up: This is still in early Alpha. I'm looking for volunteers to help me break it (and hopefully fix it). It's stable enough to run, but please **backup your saves** before using it on a city you care about.
 
-		## How It Works
+		## What does it actually do?
 
-		Universal zones combine buildings from ALL installed regional content packs. When you paint a universal zone, the game's spawn system can select from buildings across all enabled regions, creating diverse streetscapes.
+		It adds a new **"Universal" tab** to your Zones menu with 10 new zoning options. When you paint these, the game grabs assets from all your active DLCs/Regions based on standard demand and land value.
 
-		## Alpha Test Disclaimer
+		The new zones include:
 
-		This is an experimental release. Expect issues, bugs, and potential game crashes. Always backup your saves. Use at your own risk. Please dont use in important cities yet! It may break things.
+		- **Residential:** Low (mixes suburbs/villas), Row (mixes brownstones/terraces), Medium, and High density.
+		- **Commercial:** Low and High density (mixes boutiques, big box stores, etc).
+		- **Office:** Low and High density.
+		- **Others:** Mixed Use and Low Rent housing.
 
-		## Reporting Issues
+		*Note: Your standard NA/EU zones are untouched and will still work exactly as before if you want specific control.*
 
-		Please report bugs with these logs:
-		- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
-		- `C:\Users\[user]\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\Player.log`
+		## Installation and Usage
+
+		Grab the alpha release from PDX Mods. Once installed:
+
+		1. Open the Zoning menu and look for the new **Universal** tab.
+		2. Pick a zone (e.g., Universal High Res) and paint it like normal.
+		3. Watch the game spawn a mix of buildings.
+		4. **Optional:** Go to Options - Mods - Universal Zoning System if you want to toggle specific regions off (e.g., if you want a mix of everything *except* UK assets).
+
+		### Supported Regions
+
+		Currently, the mod pulls from pretty much everything: North America, Europe, UK, Germany, France, Netherlands, East Europe, Japan, China, and generic assets.
+
+		## Helping with the Alpha
+
+		If (or when) you run into bugs, I'd appreciate a report.
+
+		Please grab these two log files and send them my way (Discord or PDX Mods):
+
+		- %LocalAppData%\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log
+		- %LocalAppData%\Colossal Order\Cities Skylines II\Logs\Player.log
+
+		## How it works under the hood
+
+		For those curious: On game load, the mod scans all your building prefabs. It creates "clones" of them and assigns these clones to the new Universal Zone definitions.
+
+		It ends up creating about **7,000+ clones** on the first load, so your **game startup might take a few seconds longer than usual**. This is normal.
+
+		**Known Limitations:**
+
+		- Signature/Unique buildings aren't cloned (kept them exclusive on purpose).
+		- Zone colors on the map are just visual indicators; they don't change the underlying logic.
+		- Buildings still respect their original level and size constraints.
+
+		## Future Plans
+
+		I'm hoping to polish this up with custom icons and maybe a way to weigh the probabilities (e.g., 80% EU, 20% US). Also looking into support for custom asset packs once the community releases more of them.
 
 		## Credits
 
-		Built using the Cities: Skylines II modding framework. Thanks to the CS2 modding community!
+		Big thanks to the CS2 modding discord for the documentation. Special shoutout to **@luca** and **StarQ** for pointing me in the right direction when I got stuck!
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
@@ -50,7 +82,7 @@
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/universal-zoning-system-uzs.1882199/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.1.3" />
+	<ModVersion Value="0.1.3.4" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
@@ -58,34 +90,7 @@
 	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
-	<ChangeLog>
-## Version 0.1.3 (Alpha) - Performance Update
-- **PERFORMANCE**: Pre-caches universal zone prefabs by ZoneType
-- **PERFORMANCE**: Caches zone classifications to avoid repeated lookups
-- **PERFORMANCE**: Uses StringComparer.Ordinal for faster HashSet operations
-- **PERFORMANCE**: Uses IndexOf with OrdinalIgnoreCase instead of ToLowerInvariant()
-- **PERFORMANCE**: Reduced logging during iteration (only first 3 clones)
-- **PERFORMANCE**: Added timing measurement to track cloning duration
-- Compact summary logs for better readability
-
-## Version 0.1.2 (Alpha)
-- Fixed ExtraLib compatibility crash by cloning existing UI category instead of creating from scratch
-- UI category now properly inherits all required buffers and components
-- Added fallback if no template category is found
-
-## Version 0.1.1 (Alpha)
-- Fixed crash when creating UI category (UIAssetCategoryPrefab components initialization)
-- Fixed Low Rent buildings spawning in Low Residential zones
-- Improved zone type classification for Row Housing
-- Code cleanup: removed unused systems (BuildingCollector, BuildingMatcher, etc.)
-
-## Version 0.1.0 (Alpha)
-- Initial alpha release
-- 10 Universal zone types
-- Support for all regional building packs
-- Region toggle settings
-- Strict zone type filtering (Low Rent separated from Low Residential)
-	</ChangeLog>
+	<ChangeLog>## Version 0.1.3.4 (Alpha) - Fixed the missing icon UI issue</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/redlabracer/Universal-Zoning-System-UZS-Test" />
 	<!--Supported values Public, Private, Unlisted-->
