@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Prefabs;
@@ -335,108 +336,229 @@ namespace UniversalZoningSystem
             Log.Info($"Created {_createdZonePrefabs.Count} universal zone prefabs.");
         }
 
-        private bool CreateUniversalZonePrefab(UniversalZoneDefinition definition, int priority)
+        private void UpdatePrefabInternalName(PrefabBase prefab, string oldName, string newName)
         {
-            var primaryType = definition.SourceZoneTypes[0];
-
-            if (!_templateZones.TryGetValue(primaryType, out var templateZone))
-            {
-                Log.Warn($"No template zone found for {definition.Name} (type: {primaryType})");
-                return false;
-            }
-
-            if (!_templateZoneEntities.TryGetValue(primaryType, out var templateEntity))
-            {
-                Log.Warn($"No template entity found for {definition.Name}");
-                return false;
-            }
-
             try
             {
-                // CLONE the entire template zone prefab
-                var universalZone = UnityEngine.Object.Instantiate(templateZone);
-                universalZone.name = definition.Id;
-
-                // Update the UIObject to use our custom category
-                var uiObject = universalZone.GetComponent<UIObject>();
-                if (uiObject != null && _universalZoneCategoryEntity != Entity.Null)
+                var type = prefab.GetType();
+                while (type != null && type != typeof(UnityEngine.Object))
                 {
-                    uiObject.m_Group = _universalZoneCategory;
-                    uiObject.m_Priority = priority;
-                    
-                    Log.Info($"  {definition.Id}: Priority={priority}");
-                }
-
-                // Remove ThemeObject component so the zone appears in all themes
-                var themeObject = universalZone.GetComponent<ThemeObject>();
-                if (themeObject != null)
-                {
-                    universalZone.components.Remove(themeObject);
-                    UnityEngine.Object.Destroy(themeObject);
-                    Log.Info($"  Removed ThemeObject from {definition.Id}");
-                }
-
-                // Register with the prefab system
-                _prefabSystem.AddPrefab(universalZone);
-                _createdZonePrefabs.Add(universalZone);
-
-                // Get the entity
-                var entity = _prefabSystem.GetEntity(universalZone);
-                if (entity != Entity.Null)
-                {
-                    _universalZoneEntities[definition.Id] = entity;
-                    
-                    // Log template ZoneData
-                    if (EntityManager.HasComponent<ZoneData>(templateEntity))
+                    var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    foreach (var field in fields)
                     {
-                        var templateZoneData = EntityManager.GetComponentData<ZoneData>(templateEntity);
-                        Log.Info($"  Template ZoneData: AreaType={templateZoneData.m_AreaType}, ZoneType={templateZoneData.m_ZoneType}, ZoneFlags={templateZoneData.m_ZoneFlags}");
-                        
-                        // Check if our entity has ZoneData
-                        if (EntityManager.HasComponent<ZoneData>(entity))
+                        if (field.FieldType == typeof(string))
                         {
-                            var currentZoneData = EntityManager.GetComponentData<ZoneData>(entity);
-                            Log.Info($"  Current ZoneData (before): AreaType={currentZoneData.m_AreaType}, ZoneType={currentZoneData.m_ZoneType}, ZoneFlags={currentZoneData.m_ZoneFlags}");
-                            
-                            // Copy the zone data from template
-                            EntityManager.SetComponentData(entity, templateZoneData);
-                            
-                            // Verify the copy worked
-                            var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
-                            Log.Info($"  Verified ZoneData (after): AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
-                            
-                            if (verifiedZoneData.m_AreaType != templateZoneData.m_AreaType)
+                            var value = field.GetValue(prefab) as string;
+                            Log.Info($"[DEBUG] Checking field '{field.Name}' in '{type.Name}': '{value}'");
+                            if (value != null && value.Contains(oldName))
                             {
-                                Log.Error($"  ZoneData copy FAILED! AreaType mismatch.");
+                                var newValue = value.Replace(oldName, newName);
+                                field.SetValue(prefab, newValue);
+                                Log.Info($"[FIX] Updated field '{field.Name}' in '{type.Name}' from '{value}' to '{newValue}'");
+                            }
+                        }
+                    }
+                    type = type.BaseType;
+                }
+
+                // Explicitly check PrefabBase for m_Name just in case
+                var prefabBaseType = typeof(PrefabBase);
+                var mNameField = prefabBaseType.GetField("m_Name", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                if (mNameField != null && mNameField.FieldType == typeof(string))
+                {
+                    var value = mNameField.GetValue(prefab) as string;
+                    Log.Info($"[DEBUG] Checking explicit PrefabBase.m_Name: '{value}'");
+                    if (value != null && value.Contains(oldName))
+                    {
+                        var newValue = value.Replace(oldName, newName);
+                        mNameField.SetValue(prefab, newValue);
+                        Log.Info($"[FIX] Updated explicit PrefabBase.m_Name from '{value}' to '{newValue}'");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Failed to update internal prefab name: {ex.Message}");
+            }
+        }
+
+        private bool CreateUniversalZonePrefab(UniversalZoneDefinition definition, int priority)
+        {
+            try
+            {
+                var primaryType = definition.SourceZoneTypes[0];
+
+                if (!_templateZones.TryGetValue(primaryType, out var templateZone))
+                {
+                    Log.Warn($"No template zone found for {definition.Name} (type: {primaryType})");
+                    return false;
+                }
+
+                if (!_templateZoneEntities.TryGetValue(primaryType, out var templateEntity))
+                {
+                    Log.Warn($"No template entity found for {definition.Name}");
+                    return false;
+                }
+
+                // Check if already exists in PrefabSystem
+                var prefabID = new PrefabID(nameof(ZonePrefab), definition.Id);
+                if (_prefabSystem.TryGetPrefab(prefabID, out PrefabBase existing) && existing is ZonePrefab existingZone)
+                {
+                    _createdZonePrefabs.Add(existingZone);
+                    var entity = _prefabSystem.GetEntity(existingZone);
+                    if (entity != Entity.Null)
+                    {
+                        _universalZoneEntities[definition.Id] = entity;
+                    }
+                    return true;
+                }
+
+                // Check Resources for existing prefab
+                var loadedPrefabs = Resources.FindObjectsOfTypeAll<ZonePrefab>();
+                foreach (var prefab in loadedPrefabs)
+                {
+                    if (prefab.name == definition.Id)
+                    {
+                        Log.Info($"Found existing zone prefab in Resources for {definition.Id}. Reusing it.");
+                        
+                        if (!_prefabSystem.AddPrefab(prefab))
+                        {
+                            Log.Info($"PrefabSystem.AddPrefab returned false for existing resource {definition.Id}, assuming it's already registered.");
+                        }
+                        
+                        _createdZonePrefabs.Add(prefab);
+                        var entity = _prefabSystem.GetEntity(prefab);
+                        if (entity != Entity.Null)
+                        {
+                            _universalZoneEntities[definition.Id] = entity;
+                        }
+                        return true;
+                    }
+                }
+
+                try
+                {
+                    // CLONE the entire template zone prefab
+                    var universalZone = UnityEngine.Object.Instantiate(templateZone);
+                    universalZone.name = definition.Id;
+
+                    // Update internal name fields to ensure unique ID
+                    UpdatePrefabInternalName(universalZone, templateZone.name, definition.Id);
+
+                    // Update the UIObject to use our custom category
+                    var uiObject = universalZone.GetComponent<UIObject>();
+                    if (uiObject != null && _universalZoneCategoryEntity != Entity.Null)
+                    {
+                        uiObject.m_Group = _universalZoneCategory;
+                        uiObject.m_Priority = priority;
+                        
+                        Log.Info($"  {definition.Id}: Priority={priority}");
+                    }
+
+                    // Remove ThemeObject component so the zone appears in all themes
+                    var themeObject = universalZone.GetComponent<ThemeObject>();
+                    if (themeObject != null)
+                    {
+                        universalZone.components.Remove(themeObject);
+                        UnityEngine.Object.Destroy(themeObject);
+                        Log.Info($"  Removed ThemeObject from {definition.Id}");
+                    }
+
+                    // Register with the prefab system
+                    if (_prefabSystem.AddPrefab(universalZone))
+                    {
+                        _createdZonePrefabs.Add(universalZone);
+                    }
+                    else
+                    {
+                        // If AddPrefab fails, check if it was because it already exists
+                        if (_prefabSystem.TryGetPrefab(prefabID, out var existingBase) && existingBase is ZonePrefab existingPrefab)
+                        {
+                            Log.Info($"PrefabSystem.AddPrefab failed for {definition.Id}, but found it in system. Using existing.");
+                            UnityEngine.Object.Destroy(universalZone);
+                            universalZone = existingPrefab;
+                            if (!_createdZonePrefabs.Contains(universalZone))
+                            {
+                                _createdZonePrefabs.Add(universalZone);
                             }
                         }
                         else
                         {
-                            // Entity doesn't have ZoneData - we need to add it
-                            Log.Warn($"  Entity {entity.Index} does not have ZoneData component - adding it!");
-                            EntityManager.AddComponentData(entity, templateZoneData);
-                            
-                            var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
-                            Log.Info($"  Added ZoneData: AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
+                            Log.Warn($"PrefabSystem.AddPrefab failed for {definition.Id} (likely duplicate ID). Destroying clone.");
+                            UnityEngine.Object.Destroy(universalZone);
+                            return false;
                         }
                     }
-                    else
+
+                    if (universalZone == null)
                     {
-                        Log.Warn($"  Template entity {templateEntity.Index} does not have ZoneData!");
+                        Log.Error($"Failed to create or retrieve universal zone {definition.Id}");
+                        return false;
                     }
 
-                    // Remove theme-related components from the entity as well
-                    if (EntityManager.HasComponent<ThemeData>(entity))
+                    // Get the entity
+                    var entity = _prefabSystem.GetEntity(universalZone);
+                    if (entity != Entity.Null)
                     {
-                        EntityManager.RemoveComponent<ThemeData>(entity);
-                        Log.Info($"  Removed ThemeData component from entity {entity.Index}");
+                        _universalZoneEntities[definition.Id] = entity;
+                        
+                        // Log template ZoneData
+                        if (EntityManager.HasComponent<ZoneData>(templateEntity))
+                        {
+                            var templateZoneData = EntityManager.GetComponentData<ZoneData>(templateEntity);
+                            Log.Info($"  Template ZoneData: AreaType={templateZoneData.m_AreaType}, ZoneType={templateZoneData.m_ZoneType}, ZoneFlags={templateZoneData.m_ZoneFlags}");
+                            
+                            // Check if our entity has ZoneData
+                            if (EntityManager.HasComponent<ZoneData>(entity))
+                            {
+                                var currentZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                                Log.Info($"  Current ZoneData (before): AreaType={currentZoneData.m_AreaType}, ZoneType={currentZoneData.m_ZoneType}, ZoneFlags={currentZoneData.m_ZoneFlags}");
+                                
+                                // Copy the zone data from template
+                                EntityManager.SetComponentData(entity, templateZoneData);
+                                
+                                // Verify the copy worked
+                                var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                                Log.Info($"  Verified ZoneData (after): AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
+                                
+                                if (verifiedZoneData.m_AreaType != templateZoneData.m_AreaType)
+                                {
+                                    Log.Error($"  ZoneData copy FAILED! AreaType mismatch.");
+                                }
+                            }
+                            else
+                            {
+                                // Entity doesn't have ZoneData - we need to add it
+                                Log.Warn($"  Entity {entity.Index} does not have ZoneData component - adding it!");
+                                EntityManager.AddComponentData(entity, templateZoneData);
+                                
+                                var verifiedZoneData = EntityManager.GetComponentData<ZoneData>(entity);
+                                Log.Info($"  Added ZoneData: AreaType={verifiedZoneData.m_AreaType}, ZoneType={verifiedZoneData.m_ZoneType}, ZoneFlags={verifiedZoneData.m_ZoneFlags}");
+                            }
+                        }
+                        else
+                        {
+                            Log.Warn($"  Template entity {templateEntity.Index} does not have ZoneData!");
+                        }
+
+                        // Remove theme-related components from the entity as well
+                        if (EntityManager.HasComponent<ThemeData>(entity))
+                        {
+                            EntityManager.RemoveComponent<ThemeData>(entity);
+                            Log.Info($"  Removed ThemeData component from entity {entity.Index}");
+                        }
+                        
+                        Log.Info($"Created universal zone: {definition.Name} (Entity: {entity.Index})");
+                        return true;
                     }
                     
-                    Log.Info($"Created universal zone: {definition.Name} (Entity: {entity.Index})");
-                    return true;
+                    return false;
                 }
-                
-                return false;
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to create universal zone {definition.Name}: {ex.Message}");
+                    return false;
+                }
             }
             catch (Exception ex)
             {
@@ -497,3 +619,4 @@ namespace UniversalZoningSystem
         }
     }
 }
+

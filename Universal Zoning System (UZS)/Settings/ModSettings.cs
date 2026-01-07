@@ -9,13 +9,14 @@ namespace UniversalZoningSystem.Settings
     /// Mod settings for the Universal Zoning System.
     /// </summary>
     [FileLocation(nameof(UniversalZoningSystem))]
-    [SettingsUIGroupOrder(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
-    [SettingsUIShowGroupName(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIGroupOrder(RegionSettingsGroup, WeightingSettingsGroup, CachingSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIShowGroupName(RegionSettingsGroup, WeightingSettingsGroup, CachingSettingsGroup, AdvancedSettingsGroup)]
     public class ModSettings : ModSetting
     {
         public const string MainSection = "Main";
         public const string RegionSettingsGroup = "RegionSettings";
         public const string WeightingSettingsGroup = "WeightingSettings";
+        public const string CachingSettingsGroup = "CachingSettings";
         public const string AdvancedSettingsGroup = "AdvancedSettings";
 
         public ModSettings(IMod mod) : base(mod)
@@ -91,6 +92,24 @@ namespace UniversalZoningSystem.Settings
 
         #endregion
 
+        #region Caching Settings
+
+        /// <summary>
+        /// Enable caching of universal buildings to disk.
+        /// Reduces load times by skipping the building discovery process on subsequent loads.
+        /// </summary>
+        [SettingsUISection(MainSection, CachingSettingsGroup)]
+        public bool EnableCaching { get; set; } = true;
+
+        /// <summary>
+        /// Force a rebuild of the building cache on the next load.
+        /// Use this if you added new building assets or changed region settings.
+        /// </summary>
+        [SettingsUISection(MainSection, CachingSettingsGroup)]
+        public bool ForceRebuildCache { get; set; } = false;
+
+        #endregion
+
         #region Advanced Settings
 
         /// <summary>
@@ -131,6 +150,16 @@ namespace UniversalZoningSystem.Settings
             EnableChina = true;
             UseEqualRegionWeighting = true;
             EnableVerboseLogging = false;
+            EnableCaching = true;
+            ForceRebuildCache = false;
+        }
+
+        /// <summary>
+        /// Save settings to disk.
+        /// </summary>
+        public void Save()
+        {
+            ApplyAndSave();
         }
 
         /// <summary>
