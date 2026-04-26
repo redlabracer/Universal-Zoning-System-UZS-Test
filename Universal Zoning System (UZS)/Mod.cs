@@ -1,9 +1,12 @@
-using System;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
+using Colossal.UI;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
+using HarmonyLib;
+using System;
+using System.IO;
 using Unity.Entities;
 using UniversalZoningSystem.Localization;
 using UniversalZoningSystem.Settings;
@@ -23,6 +26,7 @@ namespace UniversalZoningSystem
         public static ModSettings Settings { get; private set; }
 
         private LocalizationManager _localizationManager;
+        private Harmony _harmony;
 
         public void OnLoad(UpdateSystem updateSystem)
         {
@@ -32,6 +36,8 @@ namespace UniversalZoningSystem
             if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
             {
                 Log.Info($"Mod location: {asset.path}");
+                string modPath = Path.GetDirectoryName(asset.path);
+                UIManager.defaultUISystem.AddHostLocation("universalzoningsystem", modPath, false);
             }
 
             // Initialize settings
@@ -67,6 +73,19 @@ namespace UniversalZoningSystem
             // Debug/diagnostic systems (can be disabled in production)
             updateSystem.UpdateAt<DebugSystem>(SystemUpdatePhase.PrefabUpdate);
 
+            try
+            {
+                _harmony = new Harmony("redlabracer.universalzoningsystem");
+                _harmony.PatchAll(typeof(Mod).Assembly);
+                BuildingZoneModifierSystem.UseHarmonyTrigger = true;
+                Log.Info("Harmony patches applied.");
+            }
+            catch (Exception ex)
+            {
+                BuildingZoneModifierSystem.UseHarmonyTrigger = false;
+                Log.Error($"Failed to apply Harmony patches: {ex.Message}");
+            }
+
             Log.Info("Universal Zoning System loaded successfully.");
         }
 
@@ -79,6 +98,14 @@ namespace UniversalZoningSystem
                 Settings.UnregisterInOptionsUI();
                 Settings = null;
             }
+
+            if (_harmony != null)
+            {
+                _harmony.UnpatchAll(_harmony.Id);
+                _harmony = null;
+            }
+
+            BuildingZoneModifierSystem.UseHarmonyTrigger = false;
 
             Instance = null;
         }

@@ -79,7 +79,7 @@ Big thanks to the CS2 modding discord for the documentation. Special shoutout to
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/universal-zoning-system-uzs.1882199/" />
 	<!--Version of the mod-->
-	<ModVersion Value="0.1.3.7" />
+	<ModVersion Value="0.1.4.0" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.5.*" />
 	<!--Dependency for the mod, can be set multiple times-->
@@ -87,7 +87,7 @@ Big thanks to the CS2 modding discord for the documentation. Special shoutout to
 	<!--Required DLC-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version-->
-	<ChangeLog>## Version 0.1.3.7 (Alpha) - again hopefully now fixed description formatting</ChangeLog>
+	<ChangeLog>## Version 0.1.4.0 (Alpha) - Updated icon for the Zone Toolbar so that UZS has its own Icon. I also could fix the dozens of duplicate prefab id´s warings in the log files</ChangeLog>
 	<!--External link-->
 	<ExternalLink Type="github" Url="https://github.com/redlabracer/Universal-Zoning-System-UZS-Test" />
 	<!--Supported values Public, Private, Unlisted-->

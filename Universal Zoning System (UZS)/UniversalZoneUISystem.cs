@@ -244,45 +244,44 @@ namespace UniversalZoningSystem
             // This ensures all internal structures are properly initialized
             _universalZoneCategory = UnityEngine.Object.Instantiate(templateCategory);
             _universalZoneCategory.name = "ZonesUniversal";
-            
-            // Ensure components list exists
+
+            // Ensure components list exists AND is completely unlinked from the template!
             if (_universalZoneCategory.components == null)
             {
                 _universalZoneCategory.components = new List<ComponentBase>();
             }
-            
+            else
+            {
+                // Erstelle eine saubere Kopie der Liste, damit wir nicht Vanilla verändern
+                _universalZoneCategory.components = new List<ComponentBase>(_universalZoneCategory.components);
+            }
+
             // Set the parent menu
             _universalZoneCategory.m_Menu = zonesMenuPrefab;
 
-            // Update the UIObject component
-            var uiObject = _universalZoneCategory.GetComponent<UIObject>();
-            if (uiObject != null)
+            // Finde das alte (Vanilla) UIObject und ENTFERNE es aus unserer neuen Kategorie!
+            var originalUiObject = _universalZoneCategory.GetComponent<UIObject>();
+            if (originalUiObject != null)
             {
-                uiObject.m_Icon = "Media/Game/Icons/Zones.svg";
-                uiObject.m_Priority = 100; // After other zone categories
-                uiObject.active = true;
-                uiObject.m_IsDebugObject = false;
-                uiObject.m_Group = null; // Top-level category, no parent group
+                _universalZoneCategory.components.Remove(originalUiObject);
             }
-            else
-            {
-                // Create UIObject if it doesn't exist on template
-                uiObject = ScriptableObject.CreateInstance<UIObject>();
-                uiObject.name = "UIObject";
-                uiObject.m_Icon = "Media/Game/Icons/Zones.svg";
-                uiObject.m_Priority = 100;
-                uiObject.active = true;
-                uiObject.m_IsDebugObject = false;
-                uiObject.m_Group = null;
-                _universalZoneCategory.components.Add(uiObject);
-            }
+
+            // Erstelle jetzt ein BRANDNEUES UIObject nur für deine Mod
+            var newUiObject = ScriptableObject.CreateInstance<UIObject>();
+            newUiObject.name = "UIObject";
+            newUiObject.m_Icon = "coui://universalzoningsystem/icons/universal_icon.svg";
+            newUiObject.m_Priority = 100;
+            newUiObject.active = true;
+            newUiObject.m_IsDebugObject = false;
+            newUiObject.m_Group = null;
+            _universalZoneCategory.components.Add(newUiObject);
 
             // Remove any theme restrictions from the cloned category
             var themeObject = _universalZoneCategory.GetComponent<ThemeObject>();
             if (themeObject != null)
             {
                 _universalZoneCategory.components.Remove(themeObject);
-                UnityEngine.Object.Destroy(themeObject);
+                // Wichtig: Mache KEIN Object.Destroy(themeObject), da dies sonst das Vanilla-Theme blockiert!
             }
 
             // Register with prefab system
@@ -294,8 +293,6 @@ namespace UniversalZoningSystem
             Log.Info($"Created Universal Zones category (cloned from {templateCategory.name}):");
             Log.Info($"  Name: {_universalZoneCategory.name}");
             Log.Info($"  Menu: {_universalZoneCategory.m_Menu?.name ?? "null"}");
-            Log.Info($"  Icon: {uiObject?.m_Icon ?? "null"}");
-            Log.Info($"  Priority: {uiObject?.m_Priority ?? -1}");
             Log.Info($"  Entity: {_universalZoneCategoryEntity.Index}");
         }
 
@@ -374,6 +371,13 @@ namespace UniversalZoningSystem
                     universalZone.components.Remove(themeObject);
                     UnityEngine.Object.Destroy(themeObject);
                     Log.Info($"  Removed ThemeObject from {definition.Id}");
+                }
+
+                var obsoleteIds = universalZone.GetComponent<ObsoleteIdentifiers>();
+                if (obsoleteIds != null)
+                {
+                    universalZone.components?.Remove(obsoleteIds);
+                    UnityEngine.Object.Destroy(obsoleteIds);
                 }
 
                 // Register with the prefab system

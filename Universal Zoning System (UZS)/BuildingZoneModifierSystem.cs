@@ -39,10 +39,11 @@ namespace UniversalZoningSystem
         private EntityQuery _buildingQuery;
         private bool _initialized;
         private int _frameDelay;
+        internal static bool UseHarmonyTrigger { get; set; }
 
         // Track created duplicate prefabs for cleanup
         private readonly List<BuildingPrefab> _createdDuplicates = new List<BuildingPrefab>();
-        
+
         // Statistics
         private readonly Dictionary<string, int> _duplicatesByZone = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _duplicatesByRegion = new Dictionary<string, int>();
@@ -62,24 +63,11 @@ namespace UniversalZoningSystem
             Log.Info("BuildingZoneModifierSystem created.");
         }
 
-        /// <summary>
-        /// Run during game preload to modify buildings BEFORE the spawn system caches them.
-        /// </summary>
-        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
-        {
-            base.OnGamePreload(purpose, mode);
-            
-            Log.Info($"BuildingZoneModifierSystem.OnGamePreload: Purpose={purpose}, Mode={mode}");
-            
-            if (!mode.IsGameOrEditor())
-                return;
-
-            // Try to run building modification here, before the spawn system caches buildings
-            TryModifyBuildings();
-        }
-
         protected override void OnUpdate()
         {
+            if (UseHarmonyTrigger)
+                return;
+
             if (_initialized)
                 return;
 
@@ -130,6 +118,11 @@ namespace UniversalZoningSystem
             }
         }
 
+        internal void TryModifyBuildingsFromHarmony()
+        {
+            TryModifyBuildings();
+        }
+
         private void ModifyBuildingsForUniversalZones()
         {
             var startTime = DateTime.Now;
@@ -152,20 +145,7 @@ namespace UniversalZoningSystem
                 return;
             }
 
-            // OPTIMIZATION 2: Use StringComparer.Ordinal for faster HashSet lookups
-            var existingPrefabNames = new HashSet<string>(StringComparer.Ordinal);
-            var allPrefabsQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>());
-            var allPrefabEntities = allPrefabsQuery.ToEntityArray(Allocator.Temp);
-            foreach (var entity in allPrefabEntities)
-            {
-                var prefab = _prefabSystem.GetPrefab<PrefabBase>(entity);
-                if (prefab != null)
-                {
-                    existingPrefabNames.Add(prefab.name);
-                }
-            }
-            allPrefabEntities.Dispose();
-
+            var createdCloneNames = new HashSet<string>(StringComparer.Ordinal);
             var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
             var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
 
@@ -179,6 +159,7 @@ namespace UniversalZoningSystem
                 int skippedNoClassification = 0;
                 int skippedRegionDisabled = 0;
                 int skippedInvalidForZone = 0;
+                int failedToAdd = 0;
 
                 foreach (var buildingEntity in buildingEntities)
                 {
@@ -216,7 +197,6 @@ namespace UniversalZoningSystem
                         continue;
                     }
 
-                    // Check region
                     var region = RegionPrefixManager.GetRegionFromPrefabName(buildingPrefab.name);
                     if (!IsRegionEnabled(region))
                     {
@@ -224,7 +204,6 @@ namespace UniversalZoningSystem
                         continue;
                     }
 
-                    // Validate building name matches zone type
                     if (!IsBuildingValidForZoneType(buildingPrefab.name, classification.ZoneType))
                     {
                         skippedInvalidForZone++;
@@ -235,38 +214,48 @@ namespace UniversalZoningSystem
                     if (!universalZonePrefabs.TryGetValue(classification.ZoneType, out var universalZonePrefab))
                         continue;
 
-                    // Check if clone already exists
+                    // Check if clone already created in this session
                     string cloneName = "Universal_" + buildingPrefab.name;
-                    if (existingPrefabNames.Contains(cloneName))
+                    if (!createdCloneNames.Add(cloneName))
                         continue;
 
                     // CLONE the prefab
                     var newPrefab = UnityEngine.Object.Instantiate(buildingPrefab);
                     newPrefab.name = cloneName;
 
+                    var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
+                    if (obsoleteIds != null)
+                    {
+                        newPrefab.components?.Remove(obsoleteIds);
+                        UnityEngine.Object.Destroy(obsoleteIds);
+                    }
+
                     if (newPrefab.TryGet<SpawnableBuilding>(out var spawnable))
                     {
                         spawnable.m_ZoneType = universalZonePrefab;
 
-                        _prefabSystem.AddPrefab(newPrefab);
-                        _createdDuplicates.Add(newPrefab);
-                        existingPrefabNames.Add(cloneName);
-                        totalCloned++;
-
-                        // OPTIMIZATION 6: Only log first 3 clones
-                        if (totalCloned <= 3)
+                        try
                         {
-                            Log.Info($"  Cloned: {cloneName} -> {universalZonePrefab.name}");
+                            _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
                         }
+                        catch (Exception ex)
+                        {
+                            failedToAdd++;
+                            if (failedToAdd <= 3)
+                            {
+                                Log.Warn($"AddPrefab warning for '{cloneName}': {ex.GetType().Name} - {ex.Message}");
+                            }
+                        }
+
+                        _createdDuplicates.Add(newPrefab);
+                        totalCloned++;
 
                         // Track statistics
                         var zoneKey = classification.ZoneType.ToString();
-                        if (!_duplicatesByZone.ContainsKey(zoneKey))
-                            _duplicatesByZone[zoneKey] = 0;
+                        if (!_duplicatesByZone.ContainsKey(zoneKey)) _duplicatesByZone[zoneKey] = 0;
                         _duplicatesByZone[zoneKey]++;
 
-                        if (!_duplicatesByRegion.ContainsKey(region))
-                            _duplicatesByRegion[region] = 0;
+                        if (!_duplicatesByRegion.ContainsKey(region)) _duplicatesByRegion[region] = 0;
                         _duplicatesByRegion[region]++;
                     }
                     else
@@ -279,16 +268,6 @@ namespace UniversalZoningSystem
                 Log.Info($"=== Building Cloning Complete in {elapsed:F0}ms ===");
                 Log.Info($"Total cloned: {totalCloned}, Cached zones: {zoneClassificationCache.Count}");
                 Log.Info($"Skipped: AlreadyCloned={skippedAlreadyCloned}, NoClass={skippedNoClassification}, RegionOff={skippedRegionDisabled}, InvalidZone={skippedInvalidForZone}");
-                
-                // OPTIMIZATION 7: Compact summary logs
-                if (_duplicatesByZone.Count > 0)
-                {
-                    Log.Info($"By Zone: {string.Join(", ", _duplicatesByZone.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}");
-                }
-                if (_duplicatesByRegion.Count > 0)
-                {
-                    Log.Info($"By Region: {string.Join(", ", _duplicatesByRegion.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}");
-                }
             }
             finally
             {
@@ -390,11 +369,11 @@ namespace UniversalZoningSystem
                 if (prefab != null)
                     UnityEngine.Object.Destroy(prefab);
             }
-            
+
             _createdDuplicates.Clear();
             _duplicatesByZone.Clear();
             _duplicatesByRegion.Clear();
-            
+
             base.OnDestroy();
         }
     }

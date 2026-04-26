@@ -156,8 +156,10 @@ namespace UniversalZoningSystem
             return zoneId switch
             {
                 "UZS_LowResidential" => ZoneType.ResidentialLow,
+                "UZS_RowResidential" => ZoneType.ResidentialRow,
                 "UZS_MediumResidential" => ZoneType.ResidentialMedium,
                 "UZS_HighResidential" => ZoneType.ResidentialHigh,
+                "UZS_LowRent" => ZoneType.ResidentialLowRent,
                 "UZS_MixedUse" => ZoneType.ResidentialMixed,
                 "UZS_LowCommercial" => ZoneType.CommercialLow,
                 "UZS_HighCommercial" => ZoneType.CommercialHigh,
