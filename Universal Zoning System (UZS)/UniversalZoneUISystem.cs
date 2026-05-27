@@ -241,9 +241,11 @@ namespace UniversalZoningSystem
             }
 
             // Clone the template category instead of creating from scratch
-            // This ensures all internal structures are properly initialized
-            _universalZoneCategory = UnityEngine.Object.Instantiate(templateCategory);
-            _universalZoneCategory.name = "ZonesUniversal";
+            // This ensures all internal structures are properly initialized.
+            // Use PrefabBase.Clone() (not UnityEngine.Object.Instantiate) so each
+            // ComponentBase is cloned and its 'prefab' back-reference is rebound
+            // to the new prefab. Required by game v1.5.9+ stricter PrefabBase.OnEnable check.
+            _universalZoneCategory = (UIAssetCategoryPrefab)templateCategory.Clone("ZonesUniversal");
 
             // Ensure components list exists AND is completely unlinked from the template!
             if (_universalZoneCategory.components == null)
@@ -350,9 +352,7 @@ namespace UniversalZoningSystem
 
             try
             {
-                // CLONE the entire template zone prefab
-                var universalZone = UnityEngine.Object.Instantiate(templateZone);
-                universalZone.name = definition.Id;
+                var universalZone = (ZonePrefab)templateZone.Clone(definition.Id);
 
                 // Update the UIObject to use our custom category
                 var uiObject = universalZone.GetComponent<UIObject>();

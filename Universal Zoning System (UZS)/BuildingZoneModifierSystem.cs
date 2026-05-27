@@ -219,9 +219,14 @@ namespace UniversalZoningSystem
                     if (!createdCloneNames.Add(cloneName))
                         continue;
 
-                    // CLONE the prefab
-                    var newPrefab = UnityEngine.Object.Instantiate(buildingPrefab);
-                    newPrefab.name = cloneName;
+                    // CLONE the prefab.
+                    // Use PrefabBase.Clone() instead of UnityEngine.Object.Instantiate so that
+                    // each ComponentBase is also cloned and its 'prefab' back-reference is
+                    // reassigned to the new prefab. Otherwise the cloned BuildingPrefab would
+                    // share ComponentBase instances with the source, which triggers
+                    // "Component on prefab X(Clone) is referenced from another prefab: X"
+                    // in PrefabBase.OnEnable (game v1.5.9+ has a stricter check).
+                    var newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
 
                     var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
                     if (obsoleteIds != null)
