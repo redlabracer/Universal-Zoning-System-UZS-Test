@@ -43,6 +43,9 @@ namespace UniversalZoningSystem
         private UIAssetCategoryPrefab _universalZoneCategory;
         private Entity _universalZoneCategoryEntity;
 
+        
+        private AssetPackPrefab _universalZonePack;
+
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -112,6 +115,9 @@ namespace UniversalZoningSystem
                 // Step 2: Create our custom UI category (following StarQ's approach)
                 CreateUniversalZoneCategory();
 
+                // Step 2b: Create the creator pack that badges all universal zone thumbnails
+                CreateUniversalZonePack();
+
                 // Step 3: Create universal zone prefabs in our category
                 CreateUniversalZonePrefabs();
 
@@ -143,9 +149,14 @@ namespace UniversalZoningSystem
                     if (classification == null)
                         continue;
 
-                    // Prefer NA or EU templates
-                    bool shouldUse = !_templateZones.ContainsKey(classification.ZoneType);
-                    if (!shouldUse && (zonePrefab.name.StartsWith("NA ") || zonePrefab.name.StartsWith("EU ")))
+                    // Prefer NA or EU templates; never prefer DLC zones (their ContentPrerequisite adds a DLC badge)
+                    bool isDlc = zonePrefab.Has<ContentPrerequisite>();
+                    bool hasExisting = _templateZones.TryGetValue(classification.ZoneType, out var existing);
+                    bool existingIsDlc = hasExisting && existing.Has<ContentPrerequisite>();
+                    bool shouldUse = !hasExisting;
+                    if (hasExisting && existingIsDlc && !isDlc)
+                        shouldUse = true;
+                    else if (hasExisting && !isDlc && (zonePrefab.name.StartsWith("NA ") || zonePrefab.name.StartsWith("EU ")))
                         shouldUse = true;
 
                     if (shouldUse)
@@ -271,7 +282,7 @@ namespace UniversalZoningSystem
             // Erstelle jetzt ein BRANDNEUES UIObject nur für deine Mod
             var newUiObject = ScriptableObject.CreateInstance<UIObject>();
             newUiObject.name = "UIObject";
-            newUiObject.m_Icon = "coui://universalzoningsystem/icons/universal_icon.svg";
+            newUiObject.m_Icon = ZoneDefinitions.IconBasePath + "universal_icon.svg";
             newUiObject.m_Priority = 100;
             newUiObject.active = true;
             newUiObject.m_IsDebugObject = false;
@@ -296,6 +307,46 @@ namespace UniversalZoningSystem
             Log.Info($"  Name: {_universalZoneCategory.name}");
             Log.Info($"  Menu: {_universalZoneCategory.m_Menu?.name ?? "null"}");
             Log.Info($"  Entity: {_universalZoneCategoryEntity.Index}");
+        }
+
+        private void CreateUniversalZonePack()
+        {
+            if (_universalZonePack != null)
+                return;
+
+            try
+            {
+                if (_prefabSystem.TryGetPrefab(new PrefabID(nameof(AssetPackPrefab), "UZS_RedlabracerPack"), out PrefabBase existingPrefab)
+                    && existingPrefab is AssetPackPrefab existingPack)
+                {
+                    _universalZonePack = existingPack;
+                    Log.Info("Universal zone asset pack already exists, reusing it.");
+                    return;
+                }
+
+                var pack = ScriptableObject.CreateInstance<AssetPackPrefab>();
+                pack.name = "UZS_RedlabracerPack";
+                pack.components = new List<ComponentBase>();
+
+                var packUiObject = ScriptableObject.CreateInstance<UIObject>();
+                packUiObject.name = "UIObject";
+                packUiObject.m_Icon = ZoneDefinitions.PackIconPath;
+                packUiObject.m_Priority = 100;
+                packUiObject.active = true;
+                packUiObject.m_IsDebugObject = false;
+                packUiObject.m_Group = null;
+                pack.components.Add(packUiObject);
+
+                _prefabSystem.AddPrefab(pack);
+                _universalZonePack = pack;
+
+                Log.Info($"Created asset pack {pack.name} with icon {ZoneDefinitions.PackIconPath}");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Could not create universal zone asset pack: {ex.Message}");
+                _universalZonePack = null;
+            }
         }
 
         private void CreateUniversalZonePrefabs()
@@ -360,11 +411,31 @@ namespace UniversalZoningSystem
                 {
                     uiObject.m_Group = _universalZoneCategory;
                     uiObject.m_Priority = priority;
-                    
+
                     Log.Info($"  {definition.Id}: Priority={priority}");
                 }
 
-                // Remove ThemeObject component so the zone appears in all themes
+                
+                if (uiObject != null && !string.IsNullOrEmpty(definition.IconPath))
+                {
+                    uiObject.m_Icon = definition.IconPath;
+                    Log.Info($"  {definition.Id}: Icon={definition.IconPath}");
+                }
+
+                
+                if (_universalZonePack != null)
+                {
+                    var packItem = universalZone.GetComponent<AssetPackItem>();
+                    if (packItem == null)
+                    {
+                        packItem = ScriptableObject.CreateInstance<AssetPackItem>();
+                        packItem.name = nameof(AssetPackItem);
+                        universalZone.components.Add(packItem);
+                    }
+                    packItem.m_Packs = new[] { _universalZonePack };
+                }
+
+                
                 var themeObject = universalZone.GetComponent<ThemeObject>();
                 if (themeObject != null)
                 {

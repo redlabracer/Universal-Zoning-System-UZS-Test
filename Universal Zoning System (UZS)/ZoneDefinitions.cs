@@ -49,12 +49,18 @@ namespace UniversalZoningSystem
     /// </summary>
     public static class ZoneDefinitions
     {
+        
+        public const string IconBasePath = "coui://universalzoningsystem/icons/";
+
+        public const string PackIconPath = IconBasePath + "uzs_pack_icon.svg";
+
         public static readonly UniversalZoneDefinition UniversalLowResidential = new UniversalZoneDefinition(
             "UZS_LowResidential",
             "Universal Low Residential",
             "Single-family homes from all regions - American suburbs, European villas, Japanese houses, and more.",
             "Residential",
-            new[] { ZoneType.ResidentialLow }
+            new[] { ZoneType.ResidentialLow },
+            IconBasePath + "UZS_ZoneResidentialLow.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalRowResidential = new UniversalZoneDefinition(
@@ -62,7 +68,8 @@ namespace UniversalZoningSystem
             "Universal Row Residential",
             "Townhouses and row homes worldwide - Boston brownstones, London terraces, Dutch canal houses.",
             "Residential",
-            new[] { ZoneType.ResidentialRow }
+            new[] { ZoneType.ResidentialRow },
+            IconBasePath + "UZS_ZoneResidentialMediumRow.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalMediumResidential = new UniversalZoneDefinition(
@@ -70,7 +77,8 @@ namespace UniversalZoningSystem
             "Universal Medium Residential",
             "Mid-rise apartments globally - Parisian Haussmann buildings, Berlin blocks, Tokyo apartments.",
             "Residential",
-            new[] { ZoneType.ResidentialMedium }
+            new[] { ZoneType.ResidentialMedium },
+            IconBasePath + "UZS_ZoneResidentialMedium.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalHighResidential = new UniversalZoneDefinition(
@@ -78,7 +86,8 @@ namespace UniversalZoningSystem
             "Universal High Residential",
             "Skyscrapers and towers from every culture - Manhattan high-rises, Hong Kong towers, Dubai residences.",
             "Residential",
-            new[] { ZoneType.ResidentialHigh }
+            new[] { ZoneType.ResidentialHigh },
+            IconBasePath + "UZS_ZoneResidentialHigh.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalLowRent = new UniversalZoneDefinition(
@@ -86,7 +95,8 @@ namespace UniversalZoningSystem
             "Universal Low Rent",
             "Affordable housing from all regions - Social housing, public apartments, subsidized units.",
             "Residential",
-            new[] { ZoneType.ResidentialLowRent }
+            new[] { ZoneType.ResidentialLowRent },
+            IconBasePath + "UZS_ZoneResidentialLowRent.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalMixedUse = new UniversalZoneDefinition(
@@ -94,7 +104,8 @@ namespace UniversalZoningSystem
             "Universal Mixed Use",
             "Ground-floor retail with residential above - Global mixed-use developments.",
             "Residential",
-            new[] { ZoneType.ResidentialMixed }
+            new[] { ZoneType.ResidentialMixed },
+            IconBasePath + "UZS_ZoneResidentialMixed.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalLowCommercial = new UniversalZoneDefinition(
@@ -102,7 +113,8 @@ namespace UniversalZoningSystem
             "Universal Low Commercial",
             "Small shops and boutiques - Corner stores, cafes, local businesses from around the world.",
             "Commercial",
-            new[] { ZoneType.CommercialLow }
+            new[] { ZoneType.CommercialLow },
+            IconBasePath + "UZS_ZoneCommercialLow.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalHighCommercial = new UniversalZoneDefinition(
@@ -110,7 +122,8 @@ namespace UniversalZoningSystem
             "Universal High Commercial",
             "Major retail and department stores - Shopping centers, flagship stores, commercial complexes.",
             "Commercial",
-            new[] { ZoneType.CommercialHigh }
+            new[] { ZoneType.CommercialHigh },
+            IconBasePath + "UZS_ZoneCommercialHigh.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalLowOffice = new UniversalZoneDefinition(
@@ -118,7 +131,8 @@ namespace UniversalZoningSystem
             "Universal Low Office",
             "Small professional buildings - Local offices, clinics, small business headquarters.",
             "Office",
-            new[] { ZoneType.OfficeLow }
+            new[] { ZoneType.OfficeLow },
+            IconBasePath + "UZS_ZoneOfficeLow.svg"
         );
 
         public static readonly UniversalZoneDefinition UniversalHighOffice = new UniversalZoneDefinition(
@@ -126,7 +140,8 @@ namespace UniversalZoningSystem
             "Universal High Office",
             "Corporate towers and business centers - Global headquarters, financial district buildings.",
             "Office",
-            new[] { ZoneType.OfficeHigh }
+            new[] { ZoneType.OfficeHigh },
+            IconBasePath + "UZS_ZoneOfficeHigh.svg"
         );
 
         /// <summary>
