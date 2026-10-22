@@ -61,6 +61,9 @@ namespace UniversalZoningSystem
             // UI Binding system - needs to run during UIUpdate phase
             updateSystem.UpdateAt<UniversalZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
             Log.Info("UniversalZoneBindingSystem registered with UIUpdate phase.");
+
+            CustomZones.CustomZoneRegistry.EnsureLoaded();
+            updateSystem.UpdateAt<CustomZones.CustomZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
             
             // Core systems run during PrefabUpdate
             // UniversalZonePrefabSystem - caches zone templates and classifies zones

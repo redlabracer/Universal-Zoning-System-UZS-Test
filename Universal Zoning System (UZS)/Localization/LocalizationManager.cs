@@ -1,3 +1,4 @@
+﻿using System.Linq;
 using System.Collections.Generic;
 using Colossal;
 using UniversalZoningSystem.Settings;
@@ -101,6 +102,42 @@ namespace UniversalZoningSystem.Localization
 
             yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ResetToDefaults]", "Reset to Defaults");
             yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ResetToDefaults]", "Reset all settings");
+
+            // Custom Zone Builder UI
+            yield return new KeyValuePair<string, string>("Options.GROUP[Universal Zoning System (UZS).UniversalZoningSystem.Mod.PanelSettings]", "Custom Zone Builder");
+            yield return new KeyValuePair<string, string>("Options.OPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ButtonLocation]", "Button Location");
+            yield return new KeyValuePair<string, string>("Options.OPTION_DESCRIPTION[Universal Zoning System (UZS).UniversalZoningSystem.Mod.ModSettings.ButtonLocation]", "Where the Custom Zone Builder button is shown.");
+            yield return new KeyValuePair<string, string>("Options.Universal Zoning System (UZS).UniversalZoningSystem.Mod.BUTTONLOCATIONOPTION[UniversalModMenu]", "Universal Mod Menu");
+            yield return new KeyValuePair<string, string>("Options.Universal Zoning System (UZS).UniversalZoningSystem.Mod.BUTTONLOCATIONOPTION[TopLeft]", "Top Left");
+            yield return new KeyValuePair<string, string>("Options.Universal Zoning System (UZS).UniversalZoningSystem.Mod.BUTTONLOCATIONOPTION[TopRight]", "Top Right");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.BUTTON_TOOLTIP", "Open the Custom Zone Builder to combine existing zones into your own zone.");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.TITLE", "UZS Zone Composer");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.MENU_BUTTON", "Custom Zones");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.NEW_ZONE", "New Zone");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.ZONE", "Custom Zone");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.NAME", "Name");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.BASE_TYPE", "Zone Type");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.SOURCES", "Source Zones");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.BUILDINGS", "Buildings");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.SAVE", "Save");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.DELETE", "Delete");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.EMPTY", "No custom zones yet. Create one to combine existing zones.");
+            yield return new KeyValuePair<string, string>("UniversalZoning.CustomZones.RESTART_REQUIRED", "Some changes (removed zones or sources) take full effect after restarting the game.");
+
+            // Custom zone prefab names
+            foreach (var custom in CustomZones.CustomZoneRegistry.Zones)
+            {
+                yield return new KeyValuePair<string, string>($"Assets.NAME[{custom.Id}]", custom.Name);
+                yield return new KeyValuePair<string, string>($"Assets.DESCRIPTION[{custom.Id}]", DescribeCustomZone(custom));
+            }
+        }
+
+        private static string DescribeCustomZone(CustomZones.CustomZoneDefinition custom)
+        {
+            var dictionary = Game.SceneFlow.GameManager.instance?.localizationManager?.activeDictionary;
+            var names = custom.SourceZones.Select(zone =>
+                dictionary != null && dictionary.TryGetValue($"Assets.NAME[{zone}]", out var name) && !string.IsNullOrEmpty(name) ? name : zone);
+            return "Custom zone combining:\n" + string.Join("\n", names.Select(n => "• " + n));
         }
 
         public void Unload()

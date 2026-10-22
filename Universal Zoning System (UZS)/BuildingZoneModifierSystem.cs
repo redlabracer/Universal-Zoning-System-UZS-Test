@@ -109,6 +109,7 @@ namespace UniversalZoningSystem
             try
             {
                 ModifyBuildingsForUniversalZones();
+                CloneBuildingsForAllCustomZones();
                 _initialized = true;
             }
             catch (Exception ex)
@@ -278,6 +279,106 @@ namespace UniversalZoningSystem
             {
                 buildingEntities.Dispose();
             }
+        }
+
+        private void CloneBuildingsForAllCustomZones()
+        {
+            foreach (var custom in CustomZones.CustomZoneRegistry.Zones)
+            {
+                try
+                {
+                    CloneBuildingsForCustomZone(custom);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to clone buildings for custom zone {custom.Id}: {ex.Message}");
+                }
+            }
+        }
+
+        public int CloneBuildingsForCustomZone(CustomZones.CustomZoneDefinition custom)
+        {
+            if (custom == null || custom.SourceZones == null || custom.SourceZones.Count == 0)
+                return 0;
+
+            var customZonePrefab = _zoneUISystem.EnsureCustomZonePrefab(custom);
+            if (customZonePrefab == null)
+            {
+                Log.Warn($"Custom zone prefab {custom.Id} could not be created.");
+                return 0;
+            }
+
+            var sourceNames = new HashSet<string>(custom.SourceZones, StringComparer.Ordinal);
+            var zoneNameCache = new Dictionary<Entity, string>();
+            var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
+            int cloned = 0;
+
+            try
+            {
+                foreach (var buildingEntity in buildingEntities)
+                {
+                    var spawnData = EntityManager.GetComponentData<SpawnableBuildingData>(buildingEntity);
+                    if (spawnData.m_ZonePrefab == Entity.Null)
+                        continue;
+
+                    if (!zoneNameCache.TryGetValue(spawnData.m_ZonePrefab, out var zoneName))
+                    {
+                        zoneName = _prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var zonePrefab) ? zonePrefab.name : null;
+                        zoneNameCache[spawnData.m_ZonePrefab] = zoneName;
+                    }
+
+                    if (zoneName == null || !sourceNames.Contains(zoneName))
+                        continue;
+
+                    if (!_prefabSystem.TryGetPrefab<BuildingPrefab>(buildingEntity, out var buildingPrefab) || buildingPrefab == null)
+                        continue;
+
+                    if (buildingPrefab.name.StartsWith("Universal_") || buildingPrefab.name.StartsWith(CustomZones.CustomZoneDefinition.IdPrefix))
+                        continue;
+
+                    if (!IsBuildingValidForZoneType(buildingPrefab.name, custom.BaseZoneType))
+                        continue;
+
+                    string cloneName = custom.Id + "_" + buildingPrefab.name;
+                    if (_prefabSystem.TryGetPrefab(new PrefabID(nameof(BuildingPrefab), cloneName), out _))
+                        continue;
+
+                    var newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
+
+                    var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
+                    if (obsoleteIds != null)
+                    {
+                        newPrefab.components?.Remove(obsoleteIds);
+                        UnityEngine.Object.Destroy(obsoleteIds);
+                    }
+
+                    if (!newPrefab.TryGet<SpawnableBuilding>(out var spawnable))
+                    {
+                        UnityEngine.Object.Destroy(newPrefab);
+                        continue;
+                    }
+
+                    spawnable.m_ZoneType = customZonePrefab;
+
+                    try
+                    {
+                        _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
+                        _createdDuplicates.Add(newPrefab);
+                        cloned++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn($"AddPrefab warning for '{cloneName}': {ex.GetType().Name} - {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                buildingEntities.Dispose();
+            }
+
+            Log.Info($"Custom zone {custom.Id} ({custom.Name}): cloned {cloned} buildings from {sourceNames.Count} source zones.");
+            return cloned;
         }
 
         /// <summary>

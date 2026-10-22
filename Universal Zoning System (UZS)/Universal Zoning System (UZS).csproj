@@ -18,6 +18,12 @@
 	<Reference Include="Colossal.Core">
 	<Private>false</Private>
 	</Reference>
+	<Reference Include="Colossal.PSI.Common">
+	<Private>false</Private>
+	</Reference>
+	<Reference Include="Newtonsoft.Json">
+	<Private>false</Private>
+	</Reference>
 	<Reference Include="Colossal.Logging">
 	<Private>false</Private>
 	</Reference>
@@ -85,6 +91,7 @@
 		<Compile Remove="UI\**\*" />
 	</ItemGroup>
 	<ItemGroup>
+	  <None Include="UI\src\components\CustomZoneBuilder.tsx" />
 	  <None Include="UI\src\components\UniversalZoneToolOptions.tsx" />
 	</ItemGroup>
 	<ItemGroup>

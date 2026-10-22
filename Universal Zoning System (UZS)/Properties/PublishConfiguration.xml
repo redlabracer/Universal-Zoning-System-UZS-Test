@@ -2,7 +2,7 @@
 	<!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
 	<ModId Value="127928" />
 	<!--Name of the mod to display to players-->
-	<DisplayName Value="[Alpha] Universal Zoning System (UZS)" />
+	<DisplayName Value="[Beta] Universal Zoning System (UZS)" />
 	<!--Short description of the mod-->
 	<ShortDescription Value="Universal zoning - mix buildings from all regions (NA, EU, Japan, China, etc.) in unified zone types!" />
 	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
@@ -11,10 +11,6 @@
 I started working on **Universal Zoning System (UZS)** because I honestly missed the variety in my districts. This mod basically lets you paint zones that pull buildings from *every* installed content pack—NA, EU, Japan, whatever you've got—randomly within the same block.
 
 Instead of locking a district to just one style, this lets you mix North American suburbs, European row houses, and Asian assets side-by-side.
-
-**ALPHA STATUS: Needs Testing!**
-
-Just a heads up: This is still in early Alpha. I'm looking for volunteers to help me break it (and hopefully fix it). It's stable enough to run, but please **backup your saves** before using it on a city you care about.
 
 ## What does it actually do?
 
@@ -42,7 +38,7 @@ Grab the alpha release from PDX Mods. Once installed:
 
 Currently, the mod pulls from pretty much everything: North America, Europe, UK, Germany, France, Netherlands, East Europe, Japan, China, and generic assets.
 
-## Helping with the Alpha
+## Helping with the Beta
 
 If (or when) you run into bugs, I'd appreciate a report.
 
@@ -65,7 +61,7 @@ It ends up creating about **7,000+ clones** on the first load, so your **game st
 
 ## Future Plans
 
-I'm hoping to polish this up with custom icons and maybe a way to weigh the probabilities (e.g., 80% EU, 20% US). Also looking into support for custom asset packs once the community releases more of them.
+I'm hoping to polish this up with a way to weigh the probabilities (e.g., 80% EU, 20% US). Also looking into support for custom asset packs once the community releases more of them.
 
 ## Credits
 
@@ -87,7 +83,7 @@ Big thanks to the CS2 modding discord for the documentation. Special shoutout to
 	<!--Required DLC-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version-->
-	<ChangeLog>## Version 0.1.4.1 (Alpha) - Fixed a Game breaking Bug with the new version of the Game causing long load times</ChangeLog>
+	<ChangeLog>## Version 0.1.5.0 (Beta) - Added a Filter Option for the use with the mod Zone Organizer by Konsi / Mimonsi</ChangeLog>
 	<!--External link-->
 	<ExternalLink Type="github" Url="https://github.com/redlabracer/Universal-Zoning-System-UZS-Test" />
 	<!--Supported values Public, Private, Unlisted-->

@@ -8,8 +8,31 @@ const __dirname = path.dirname(__filename);
 const args = process.argv.slice(2);
 const watch = args.includes('--watch');
 
+const gameGlobals = {
+    'react': 'React',
+    'react-dom': 'ReactDOM',
+    'cs2/api': 'cs2/api',
+    'cs2/bindings': 'cs2/bindings',
+    'cs2/l10n': 'cs2/l10n',
+    'cs2/ui': 'cs2/ui',
+    'cs2/utils': 'cs2/utils',
+    'cs2/input': 'cs2/input',
+    'cs2/modding': 'cs2/modding',
+};
+
+const gameGlobalsPlugin = {
+    name: 'game-globals',
+    setup(build) {
+        const filter = new RegExp('^(' + Object.keys(gameGlobals).map((k) => k.replace('/', '\\/')).join('|') + ')$');
+        build.onResolve({ filter }, (args) => ({ path: args.path, namespace: 'game-global' }));
+        build.onLoad({ filter: /.*/, namespace: 'game-global' }, (args) => ({
+            contents: `module.exports = window[${JSON.stringify(gameGlobals[args.path])}];`,
+            loader: 'js',
+        }));
+    },
+};
+
 // Build as ES module for CS2 UI system
-// Don't mark anything as external - bundle everything
 const config = {
     entryPoints: [path.join(__dirname, 'src/index.tsx')],
     bundle: true,
@@ -18,8 +41,7 @@ const config = {
     jsx: 'transform',
     jsxFactory: 'React.createElement',
     jsxFragment: 'React.Fragment',
-    // Don't externalize - we use global engine and React
-    external: [],
+    plugins: [gameGlobalsPlugin],
     minify: !watch,
     sourcemap: watch,
     target: 'es2020',

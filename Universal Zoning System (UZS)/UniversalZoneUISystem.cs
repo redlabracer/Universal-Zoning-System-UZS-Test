@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Colossal.Logging;
 using Game;
@@ -120,6 +120,9 @@ namespace UniversalZoningSystem
 
                 // Step 3: Create universal zone prefabs in our category
                 CreateUniversalZonePrefabs();
+
+                // Step 3b: Create user-defined custom zones
+                CreateCustomZonePrefabs();
 
                 // Step 4: Add zones to category buffer
                 AddZonesToCategoryBuffer();
@@ -384,6 +387,40 @@ namespace UniversalZoningSystem
 
             Log.Info($"Created {_createdZonePrefabs.Count} universal zone prefabs.");
         }
+
+        private void CreateCustomZonePrefabs()
+        {
+            foreach (var custom in CustomZones.CustomZoneRegistry.Zones)
+            {
+                EnsureCustomZonePrefab(custom);
+            }
+        }
+
+        public ZonePrefab EnsureCustomZonePrefab(CustomZones.CustomZoneDefinition custom)
+        {
+            if (custom == null || string.IsNullOrEmpty(custom.Id))
+                return null;
+
+            var existing = GetUniversalZonePrefab(custom.Id);
+            if (existing != null)
+                return existing;
+
+            if (_prefabSystem.TryGetPrefab(new PrefabID(nameof(ZonePrefab), custom.Id), out PrefabBase registered) && registered is ZonePrefab registeredZone)
+                return registeredZone;
+
+            var definition = new UniversalZoneDefinition(
+                custom.Id,
+                custom.Name,
+                string.Empty,
+                "Custom",
+                new[] { custom.BaseZoneType },
+                ZoneDefinitions.IconBasePath + "Custom_" + custom.BaseZoneType + ".svg");
+
+            int priority = 1000 + _createdZonePrefabs.Count;
+            return CreateUniversalZonePrefab(definition, priority) ? GetUniversalZonePrefab(custom.Id) : null;
+        }
+
+        public bool IsInitialized => _initialized;
 
         private bool CreateUniversalZonePrefab(UniversalZoneDefinition definition, int priority)
         {

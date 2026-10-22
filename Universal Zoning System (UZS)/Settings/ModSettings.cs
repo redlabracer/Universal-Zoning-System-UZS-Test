@@ -5,18 +5,27 @@ using Game.Settings;
 
 namespace UniversalZoningSystem.Settings
 {
-    /// <summary>
-    /// Mod settings for the Universal Zoning System.
-    /// </summary>
+    public enum ButtonLocationOption
+    {
+        UniversalModMenu = 0,
+        TopLeft = 1,
+        TopRight = 2
+    }
+
     [FileLocation(nameof(UniversalZoningSystem))]
-    [SettingsUIGroupOrder(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
-    [SettingsUIShowGroupName(RegionSettingsGroup, WeightingSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIGroupOrder(RegionSettingsGroup, WeightingSettingsGroup, PanelSettingsGroup, AdvancedSettingsGroup)]
+    [SettingsUIShowGroupName(RegionSettingsGroup, WeightingSettingsGroup, PanelSettingsGroup, AdvancedSettingsGroup)]
     public class ModSettings : ModSetting
     {
         public const string MainSection = "Main";
         public const string RegionSettingsGroup = "RegionSettings";
         public const string WeightingSettingsGroup = "WeightingSettings";
+        public const string PanelSettingsGroup = "PanelSettings";
         public const string AdvancedSettingsGroup = "AdvancedSettings";
+
+        public static event System.Action UISettingsChanged;
+
+        private ButtonLocationOption _buttonLocation = ButtonLocationOption.UniversalModMenu;
 
         public ModSettings(IMod mod) : base(mod)
         {
@@ -91,6 +100,21 @@ namespace UniversalZoningSystem.Settings
 
         #endregion
 
+        #region Panel Settings
+
+        [SettingsUISection(MainSection, PanelSettingsGroup)]
+        public ButtonLocationOption ButtonLocation
+        {
+            get => _buttonLocation;
+            set
+            {
+                _buttonLocation = value;
+                UISettingsChanged?.Invoke();
+            }
+        }
+
+        #endregion
+
         #region Advanced Settings
 
         /// <summary>
@@ -131,6 +155,7 @@ namespace UniversalZoningSystem.Settings
             EnableChina = true;
             UseEqualRegionWeighting = true;
             EnableVerboseLogging = false;
+            ButtonLocation = ButtonLocationOption.UniversalModMenu;
         }
 
         /// <summary>
