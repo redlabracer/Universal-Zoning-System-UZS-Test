@@ -43,6 +43,10 @@ Please grab these two log files and send them my way (Discord or PDX Mods):
 `%LocalAppData%\Colossal Order\Cities Skylines II\Logs\UniversalZoningSystem.log`
 `%LocalAppData%\Colossal Order\Cities Skylines II\Logs\Player.log`
 
+## Translations
+
+UZS is translated by the community on Crowdin. Want to help translate it into your language? See [TRANSLATING.md](TRANSLATING.md).
+
 ## How it works under the hood
 
 For those curious: On game load, the mod scans all your building prefabs. It creates "clones" of them and assigns these clones to the new Universal Zone definitions. 

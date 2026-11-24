@@ -51,6 +51,8 @@ namespace UniversalZoningSystem.CustomZones
             if (_loaded)
                 return;
 
+            using var profilerScope = Diagnostics.ModProfiler.RegistryLoad.Auto();
+
             _loaded = true;
             try
             {
@@ -106,14 +108,17 @@ namespace UniversalZoningSystem.CustomZones
 
         private static void Save()
         {
-            try
+            using (Diagnostics.ModProfiler.RegistrySave.Auto())
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(_zones, JsonSettings));
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Failed to save custom zones: {ex.Message}");
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
+                    File.WriteAllText(FilePath, JsonConvert.SerializeObject(_zones, JsonSettings));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to save custom zones: {ex.Message}");
+                }
             }
 
             Changed?.Invoke();

@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Unity.Collections;
 using Unity.Entities;
+using UniversalZoningSystem.Diagnostics;
 
 namespace UniversalZoningSystem.CustomZones
 {
@@ -90,6 +91,8 @@ namespace UniversalZoningSystem.CustomZones
 
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, Game.GameMode mode)
         {
+            using var profilerScope = ModProfiler.CustomBindingLoadingComplete.Auto();
+
             base.OnGameLoadingComplete(purpose, mode);
             _sourcesCache = mode == Game.GameMode.Game ? BuildSourceCatalog() : null;
             if (_sourcesCache != null)
@@ -115,17 +118,27 @@ namespace UniversalZoningSystem.CustomZones
 
         private void OnRegistryChanged()
         {
+            using var profilerScope = ModProfiler.CustomBindingRegistryChanged.Auto();
+
             _customZones.Update(SerializeZones());
-            GameManager.instance.localizationManager.ReloadActiveLocale();
+
+            using (ModProfiler.CustomBindingReloadLocale.Auto())
+            {
+                GameManager.instance.localizationManager.ReloadActiveLocale();
+            }
         }
 
         private static string SerializeZones()
         {
+            using var profilerScope = ModProfiler.CustomBindingSerializeZones.Auto();
+
             return JsonConvert.SerializeObject(CustomZoneRegistry.Zones, JsonSettings);
         }
 
         private void SetBuilderOpen(bool open)
         {
+            using var profilerScope = ModProfiler.CustomBindingSetBuilderOpen.Auto();
+
             if (open && _sourcesCache == null)
             {
                 _sourcesCache = BuildSourceCatalog();
@@ -137,6 +150,8 @@ namespace UniversalZoningSystem.CustomZones
 
         private string BuildSourceCatalog()
         {
+            using var profilerScope = ModProfiler.CustomBindingBuildSourceCatalog.Auto();
+
             var buildingCounts = new Dictionary<Entity, int>();
             var buildings = _buildingQuery.ToComponentDataArray<SpawnableBuildingData>(Allocator.Temp);
             try
@@ -198,6 +213,8 @@ namespace UniversalZoningSystem.CustomZones
 
         private void SaveCustomZone(string json)
         {
+            using var profilerScope = ModProfiler.CustomBindingSaveZone.Auto();
+
             try
             {
                 var request = JsonConvert.DeserializeObject<SaveRequest>(json, JsonSettings);
@@ -243,6 +260,8 @@ namespace UniversalZoningSystem.CustomZones
 
         private void DeleteCustomZone(string id)
         {
+            using var profilerScope = ModProfiler.CustomBindingDeleteZone.Auto();
+
             if (CustomZoneRegistry.Remove(id))
                 _restartRequired.Update(true);
         }

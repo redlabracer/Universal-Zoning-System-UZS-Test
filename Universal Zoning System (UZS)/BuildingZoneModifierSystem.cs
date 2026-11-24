@@ -9,6 +9,7 @@ using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+using UniversalZoningSystem.Diagnostics;
 
 namespace UniversalZoningSystem
 {
@@ -65,6 +66,8 @@ namespace UniversalZoningSystem
 
         protected override void OnUpdate()
         {
+            using var profilerScope = ModProfiler.BuildingSystemOnUpdate.Auto();
+
             if (UseHarmonyTrigger)
                 return;
 
@@ -91,6 +94,8 @@ namespace UniversalZoningSystem
         {
             if (_initialized)
                 return;
+
+            using var profilerScope = ModProfiler.BuildingSystemTryModify.Auto();
 
             // Need zones to be created first
             if (_zoneUISystem == null || _zoneUISystem.CreatedZonePrefabs.Count == 0)
@@ -126,6 +131,8 @@ namespace UniversalZoningSystem
 
         private void ModifyBuildingsForUniversalZones()
         {
+            using var profilerScope = ModProfiler.BuildingSystemUniversalClones.Auto();
+
             var startTime = DateTime.Now;
             Log.Info("=== Creating Building Clones for Universal Zones ===");
 
@@ -185,11 +192,14 @@ namespace UniversalZoningSystem
                     // OPTIMIZATION 4: Use cached zone classification
                     if (!zoneClassificationCache.TryGetValue(spawnData.m_ZonePrefab, out var classification))
                     {
-                        if (_prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var originalZonePrefab))
+                        using (ModProfiler.BuildingSystemClassifyZone.Auto())
                         {
-                            classification = UniversalZonePrefabSystem.GetZoneClassification(originalZonePrefab.name);
+                            if (_prefabSystem.TryGetPrefab<ZonePrefab>(spawnData.m_ZonePrefab, out var originalZonePrefab))
+                            {
+                                classification = UniversalZonePrefabSystem.GetZoneClassification(originalZonePrefab.name);
+                            }
+                            zoneClassificationCache[spawnData.m_ZonePrefab] = classification;
                         }
-                        zoneClassificationCache[spawnData.m_ZonePrefab] = classification;
                     }
 
                     if (classification == null)
@@ -227,13 +237,17 @@ namespace UniversalZoningSystem
                     // share ComponentBase instances with the source, which triggers
                     // "Component on prefab X(Clone) is referenced from another prefab: X"
                     // in PrefabBase.OnEnable (game v1.5.9+ has a stricter check).
-                    var newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
-
-                    var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
-                    if (obsoleteIds != null)
+                    BuildingPrefab newPrefab;
+                    using (ModProfiler.BuildingSystemClonePrefab.Auto())
                     {
-                        newPrefab.components?.Remove(obsoleteIds);
-                        UnityEngine.Object.Destroy(obsoleteIds);
+                        newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
+
+                        var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
+                        if (obsoleteIds != null)
+                        {
+                            newPrefab.components?.Remove(obsoleteIds);
+                            UnityEngine.Object.Destroy(obsoleteIds);
+                        }
                     }
 
                     if (newPrefab.TryGet<SpawnableBuilding>(out var spawnable))
@@ -242,7 +256,10 @@ namespace UniversalZoningSystem
 
                         try
                         {
-                            _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
+                            using (ModProfiler.BuildingSystemAddPrefab.Auto())
+                            {
+                                _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -283,6 +300,8 @@ namespace UniversalZoningSystem
 
         private void CloneBuildingsForAllCustomZones()
         {
+            using var profilerScope = ModProfiler.BuildingSystemAllCustomClones.Auto();
+
             foreach (var custom in CustomZones.CustomZoneRegistry.Zones)
             {
                 try
@@ -300,6 +319,8 @@ namespace UniversalZoningSystem
         {
             if (custom == null || custom.SourceZones == null || custom.SourceZones.Count == 0)
                 return 0;
+
+            using var profilerScope = ModProfiler.BuildingSystemCustomClones.Auto();
 
             var customZonePrefab = _zoneUISystem.EnsureCustomZonePrefab(custom);
             if (customZonePrefab == null)
@@ -343,13 +364,17 @@ namespace UniversalZoningSystem
                     if (_prefabSystem.TryGetPrefab(new PrefabID(nameof(BuildingPrefab), cloneName), out _))
                         continue;
 
-                    var newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
-
-                    var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
-                    if (obsoleteIds != null)
+                    BuildingPrefab newPrefab;
+                    using (ModProfiler.BuildingSystemClonePrefab.Auto())
                     {
-                        newPrefab.components?.Remove(obsoleteIds);
-                        UnityEngine.Object.Destroy(obsoleteIds);
+                        newPrefab = (BuildingPrefab)buildingPrefab.Clone(cloneName);
+
+                        var obsoleteIds = newPrefab.GetComponent<ObsoleteIdentifiers>();
+                        if (obsoleteIds != null)
+                        {
+                            newPrefab.components?.Remove(obsoleteIds);
+                            UnityEngine.Object.Destroy(obsoleteIds);
+                        }
                     }
 
                     if (!newPrefab.TryGet<SpawnableBuilding>(out var spawnable))
@@ -362,7 +387,10 @@ namespace UniversalZoningSystem
 
                     try
                     {
-                        _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
+                        using (ModProfiler.BuildingSystemAddPrefab.Auto())
+                        {
+                            _prefabSystem.AddPrefab(newPrefab, cloneName, null, null);
+                        }
                         _createdDuplicates.Add(newPrefab);
                         cloned++;
                     }
@@ -469,6 +497,8 @@ namespace UniversalZoningSystem
 
         protected override void OnDestroy()
         {
+            using var profilerScope = ModProfiler.BuildingSystemOnDestroy.Auto();
+
             // Clean up created duplicates
             foreach (var prefab in _createdDuplicates)
             {

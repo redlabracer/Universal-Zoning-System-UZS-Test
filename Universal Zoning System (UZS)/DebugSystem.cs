@@ -76,6 +76,8 @@ namespace UniversalZoningSystem
 
         private void VerifyUniversalZoneBuildings()
         {
+            using var profilerScope = Diagnostics.ModProfiler.DebugVerify.Auto();
+
             Log.Info("=== Verifying Universal Zone Building Registration ===");
 
             var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);

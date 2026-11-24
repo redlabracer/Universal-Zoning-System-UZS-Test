@@ -8,6 +8,7 @@ using Game.UI;
 using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
+using UniversalZoningSystem.Diagnostics;
 
 namespace UniversalZoningSystem
 {
@@ -55,6 +56,8 @@ namespace UniversalZoningSystem
 
         protected override void OnUpdate()
         {
+            using var profilerScope = ModProfiler.BindingSystemOnUpdate.Auto();
+
             // Initialize cache once zone prefabs are available
             if (!_cacheInitialized)
             {
@@ -64,6 +67,8 @@ namespace UniversalZoningSystem
 
         private void InitializeZonePrefabCache()
         {
+            using var profilerScope = ModProfiler.BindingSystemInitCache.Auto();
+
             var query = GetEntityQuery(ComponentType.ReadOnly<ZoneData>(), ComponentType.ReadOnly<PrefabData>());
             if (query.IsEmptyIgnoreFilter)
                 return;
@@ -116,6 +121,8 @@ namespace UniversalZoningSystem
 
         private void SelectZone(string zoneId)
         {
+            using var profilerScope = ModProfiler.BindingSystemSelectZone.Auto();
+
             if (string.IsNullOrEmpty(zoneId))
                 return;
 

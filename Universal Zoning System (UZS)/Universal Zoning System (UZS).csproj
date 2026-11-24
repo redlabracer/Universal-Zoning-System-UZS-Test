@@ -97,6 +97,11 @@
 	<ItemGroup>
 	  <PackageReference Include="Lib.Harmony" Version="2.2.2" />
 	</ItemGroup>
+	<!-- Translations: lang\en-US.json is the Crowdin source file; every other lang\<locale>.json is managed by Crowdin. -->
+	<ItemGroup>
+		<None Remove="lang\*.json" />
+		<EmbeddedResource Include="lang\*.json" LogicalName="UniversalZoningSystem.l10n.%(Filename).json" />
+	</ItemGroup>
 	  <ItemGroup>
     <None Update="icons\*.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -1,0 +1,34 @@
+#
+# Crowdin configuration for Universal Zoning System (UZS).
+#
+# Source language : English (lang/en-US.json)
+# Translations    : one JSON file per game locale, next to the source file.
+#
+# Only the 12 locales Cities: Skylines II ships are loaded by the mod; files for any
+# other language are ignored at runtime, so enable only these target languages in Crowdin.
+#
+# The project id and token are read from the environment (GitHub secrets / local env vars),
+# so nothing secret is committed.
+#
+project_id_env: CROWDIN_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+base_path: "."
+preserve_hierarchy: true
+
+files:
+  - source: "/Universal Zoning System (UZS)/lang/en-US.json"
+    translation: "/Universal Zoning System (UZS)/lang/%locale%.json"
+    type: json
+    languages_mapping:
+      locale:
+        de: de-DE
+        es-ES: es-ES
+        fr: fr-FR
+        it: it-IT
+        ja: ja-JP
+        ko: ko-KR
+        pl: pl-PL
+        pt-BR: pt-BR
+        ru: ru-RU
+        zh-CN: zh-HANS
+        zh-TW: zh-HANT

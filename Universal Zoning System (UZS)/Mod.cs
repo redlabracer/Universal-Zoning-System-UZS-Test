@@ -8,6 +8,7 @@ using HarmonyLib;
 using System;
 using System.IO;
 using Unity.Entities;
+using UniversalZoningSystem.Diagnostics;
 using UniversalZoningSystem.Localization;
 using UniversalZoningSystem.Settings;
 
@@ -25,11 +26,12 @@ namespace UniversalZoningSystem
         public static Mod Instance { get; private set; }
         public static ModSettings Settings { get; private set; }
 
-        private LocalizationManager _localizationManager;
         private Harmony _harmony;
 
         public void OnLoad(UpdateSystem updateSystem)
         {
+            using var profilerScope = ModProfiler.ModOnLoad.Auto();
+
             Instance = this;
             Log.Info("Universal Zoning System loading...");
 
@@ -41,52 +43,60 @@ namespace UniversalZoningSystem
             }
 
             // Initialize settings
-            Settings = new ModSettings(this);
-            Settings.RegisterInOptionsUI();
-            AssetDatabase.global.LoadSettings(nameof(UniversalZoningSystem), Settings, new ModSettings(this));
-
-            // Initialize localization
-            _localizationManager = new LocalizationManager(Settings);
-            GameManager.instance.localizationManager.AddSource("en-US", _localizationManager);
-
-            // Create systems directly like StarQ's AssetUIManager does
-            // This ensures they're created during mod loading, not later
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneUISystem>();
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneBindingSystem>();
-            
-            // Register systems with update phases
-            // UI System - use GameSimulation phase which runs earlier
-            updateSystem.UpdateAt<UniversalZoneUISystem>(SystemUpdatePhase.GameSimulation);
-            
-            // UI Binding system - needs to run during UIUpdate phase
-            updateSystem.UpdateAt<UniversalZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
-            Log.Info("UniversalZoneBindingSystem registered with UIUpdate phase.");
-
-            CustomZones.CustomZoneRegistry.EnsureLoaded();
-            updateSystem.UpdateAt<CustomZones.CustomZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
-            
-            // Core systems run during PrefabUpdate
-            // UniversalZonePrefabSystem - caches zone templates and classifies zones
-            updateSystem.UpdateAt<UniversalZonePrefabSystem>(SystemUpdatePhase.PrefabUpdate);
-            
-            // Building modifier must run after zone prefabs are created
-            // This is the main system that clones buildings for universal zones
-            updateSystem.UpdateAt<BuildingZoneModifierSystem>(SystemUpdatePhase.PrefabUpdate);
-            
-            // Debug/diagnostic systems (can be disabled in production)
-            updateSystem.UpdateAt<DebugSystem>(SystemUpdatePhase.PrefabUpdate);
-
-            try
+            using (ModProfiler.ModLoadSettings.Auto())
             {
-                _harmony = new Harmony("redlabracer.universalzoningsystem");
-                _harmony.PatchAll(typeof(Mod).Assembly);
-                BuildingZoneModifierSystem.UseHarmonyTrigger = true;
-                Log.Info("Harmony patches applied.");
+                Settings = new ModSettings(this);
+                Settings.RegisterInOptionsUI();
+                AssetDatabase.global.LoadSettings(nameof(UniversalZoningSystem), Settings, new ModSettings(this));
             }
-            catch (Exception ex)
+
+            // Initialize localization (lang/*.json, managed through Crowdin)
+            LocaleLoader.Register(Settings);
+
+            using (ModProfiler.ModRegisterSystems.Auto())
             {
-                BuildingZoneModifierSystem.UseHarmonyTrigger = false;
-                Log.Error($"Failed to apply Harmony patches: {ex.Message}");
+                // Create systems directly like StarQ's AssetUIManager does
+                // This ensures they're created during mod loading, not later
+                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneUISystem>();
+                World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<UniversalZoneBindingSystem>();
+
+                // Register systems with update phases
+                // UI System - use GameSimulation phase which runs earlier
+                updateSystem.UpdateAt<UniversalZoneUISystem>(SystemUpdatePhase.GameSimulation);
+
+                // UI Binding system - needs to run during UIUpdate phase
+                updateSystem.UpdateAt<UniversalZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
+                Log.Info("UniversalZoneBindingSystem registered with UIUpdate phase.");
+
+                CustomZones.CustomZoneRegistry.EnsureLoaded();
+                updateSystem.UpdateAt<CustomZones.CustomZoneBindingSystem>(SystemUpdatePhase.UIUpdate);
+
+                // Core systems run during PrefabUpdate
+                // UniversalZonePrefabSystem - caches zone templates and classifies zones
+                updateSystem.UpdateAt<UniversalZonePrefabSystem>(SystemUpdatePhase.PrefabUpdate);
+
+                // Building modifier must run after zone prefabs are created
+                // This is the main system that clones buildings for universal zones
+                updateSystem.UpdateAt<BuildingZoneModifierSystem>(SystemUpdatePhase.PrefabUpdate);
+
+                // Debug/diagnostic systems (can be disabled in production)
+                updateSystem.UpdateAt<DebugSystem>(SystemUpdatePhase.PrefabUpdate);
+            }
+
+            using (ModProfiler.ModApplyHarmony.Auto())
+            {
+                try
+                {
+                    _harmony = new Harmony("redlabracer.universalzoningsystem");
+                    _harmony.PatchAll(typeof(Mod).Assembly);
+                    BuildingZoneModifierSystem.UseHarmonyTrigger = true;
+                    Log.Info("Harmony patches applied.");
+                }
+                catch (Exception ex)
+                {
+                    BuildingZoneModifierSystem.UseHarmonyTrigger = false;
+                    Log.Error($"Failed to apply Harmony patches: {ex.Message}");
+                }
             }
 
             Log.Info("Universal Zoning System loaded successfully.");
@@ -94,6 +104,8 @@ namespace UniversalZoningSystem
 
         public void OnDispose()
         {
+            using var profilerScope = ModProfiler.ModOnDispose.Auto();
+
             Log.Info("Universal Zoning System disposed.");
 
             if (Settings != null)

@@ -8,6 +8,7 @@ using Game.Prefabs;
 using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
+using UniversalZoningSystem.Diagnostics;
 
 namespace UniversalZoningSystem
 {
@@ -126,6 +127,8 @@ namespace UniversalZoningSystem
             if (_initialized)
                 return;
 
+            using var profilerScope = ModProfiler.PrefabSystemOnUpdate.Auto();
+
             // Wait until zones and buildings are loaded
             if (_zoneQuery.IsEmptyIgnoreFilter || _buildingQuery.IsEmptyIgnoreFilter)
                 return;
@@ -163,6 +166,8 @@ namespace UniversalZoningSystem
 
         private void CacheZoneTemplates()
         {
+            using var profilerScope = ModProfiler.PrefabSystemCacheZoneTemplates.Auto();
+
             var zoneEntities = _zoneQuery.ToEntityArray(Allocator.Temp);
 
             try
@@ -196,6 +201,8 @@ namespace UniversalZoningSystem
 
         private void CollectAndClassifyBuildings()
         {
+            using var profilerScope = ModProfiler.PrefabSystemCollectBuildings.Auto();
+
             var buildingEntities = _buildingQuery.ToEntityArray(Allocator.Temp);
             var spawnableDataLookup = GetComponentLookup<SpawnableBuildingData>(true);
             var zoneDataLookup = GetComponentLookup<ZoneData>(true);
@@ -254,6 +261,8 @@ namespace UniversalZoningSystem
 
         private void ModifyZonePrefabsForUniversalAccess()
         {
+            using var profilerScope = ModProfiler.PrefabSystemModifyZones.Auto();
+
             int modifiedZones = 0;
             int addedBuildings = 0;
 
@@ -284,6 +293,8 @@ namespace UniversalZoningSystem
 
         private int AddBuildingsToZone(ZonePrefab zonePrefab, List<BuildingPrefab> buildings, ZoneType zoneType)
         {
+            using var profilerScope = ModProfiler.PrefabSystemAddBuildingsToZone.Auto();
+
             int addedCount = 0;
 
             try
@@ -356,6 +367,8 @@ namespace UniversalZoningSystem
 
         private void LogResults()
         {
+            using var profilerScope = ModProfiler.PrefabSystemLogResults.Auto();
+
             Log.Info("=== Universal Zone System Results ===");
             
             foreach (var kvp in _buildingsByZoneType)
@@ -382,6 +395,8 @@ namespace UniversalZoningSystem
         {
             if (string.IsNullOrEmpty(zoneName))
                 return null;
+
+            using var profilerScope = ModProfiler.GetZoneClassification.Auto();
 
             // Direct match (case-insensitive)
             if (ZoneNameMappings.TryGetValue(zoneName, out var classification))

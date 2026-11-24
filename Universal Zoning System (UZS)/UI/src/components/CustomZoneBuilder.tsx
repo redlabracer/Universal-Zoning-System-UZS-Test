@@ -77,10 +77,74 @@ const parse = <T,>(json: string, fallback: T): T => {
     }
 };
 
+// Zone lists longer than this start with their region groups collapsed.
+const AUTO_EXPAND_LIMIT = 15;
+const OTHER_GROUP = '';
+
+interface SourceRow extends SourceZone {
+    label: string;
+}
+
+interface RegionGroup {
+    key: string;
+    rows: SourceRow[];
+}
+
+// Mod and vanilla zone names start with a region code such as "EU", "NA" or "USA".
+const regionOf = (label: string) => /^([A-Z]{2,4})(?=\s)/.exec(label)?.[1] ?? OTHER_GROUP;
+
 const PANEL_STYLE: React.CSSProperties = { width: '520rem' };
 const LIST_STYLE: React.CSSProperties = { maxHeight: '400rem' };
-const RIGHT_STYLE: React.CSSProperties = { display: 'flex', flexDirection: 'row', alignItems: 'center' };
 const COUNT_STYLE: React.CSSProperties = { color: 'var(--textColorDim)', marginRight: '12rem' };
+const TOOLBAR_STYLE: React.CSSProperties = { display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '6rem 8rem' };
+const SEARCH_STYLE: React.CSSProperties = { flex: '1 1 0' };
+const SMALL_BUTTON_STYLE: React.CSSProperties = {
+    marginLeft: '8rem',
+    padding: '4rem 10rem',
+    borderRadius: '4rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'var(--textColor)',
+    fontSize: 'var(--fontSizeS)',
+    cursor: 'pointer',
+};
+const GROUP_HEADER_STYLE: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: '6rem 8rem',
+    marginTop: '2rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: '4rem',
+};
+const GROUP_TITLE_STYLE: React.CSSProperties = {
+    flex: '1 1 0',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    color: 'var(--textColor)',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+};
+const GROUP_COUNT_STYLE: React.CSSProperties = { color: 'var(--textColorDim)', fontWeight: 'normal', marginLeft: '8rem' };
+const ROW_STYLE: React.CSSProperties = { display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '4rem 8rem' };
+const NESTED_ROW_STYLE: React.CSSProperties = { ...ROW_STYLE, paddingLeft: '26rem' };
+const ROW_LABEL_STYLE: React.CSSProperties = {
+    flex: '1 1 0',
+    color: 'var(--textColor)',
+    fontSize: 'var(--fontSizeS)',
+    cursor: 'pointer',
+    marginRight: '8rem',
+};
+const EMPTY_STYLE: React.CSSProperties = { padding: '8rem', color: 'var(--textColorDim)', fontSize: 'var(--fontSizeS)' };
+const chevronStyle = (expanded: boolean): React.CSSProperties => ({
+    width: '0',
+    height: '0',
+    borderTop: '5rem solid transparent',
+    borderBottom: '5rem solid transparent',
+    borderLeft: '7rem solid var(--textColor)',
+    marginRight: '10rem',
+    transform: expanded ? 'rotate(90deg)' : 'none',
+});
 const FIELD_STYLE: React.CSSProperties = { width: '260rem' };
 const FOOTER_STYLE: React.CSSProperties = { display: 'flex', flexDirection: 'row', padding: '10rem 4rem 4rem' };
 const FOOTER_BUTTON_STYLE: React.CSSProperties = { flex: '1 1 0', margin: '0 6rem', color: '#ffffff', fontWeight: 'bold' };
@@ -119,6 +183,8 @@ const CustomZoneBuilderPanel = () => {
     const [name, setName] = useState('');
     const [baseType, setBaseType] = useState<string>('');
     const [selectedSources, setSelectedSources] = useState<string[]>([]);
+    const [search, setSearch] = useState('');
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
     const selectedZone = zones.find((z) => z.Id === selectedId) ?? null;
 
@@ -154,9 +220,16 @@ const CustomZoneBuilderPanel = () => {
     const setSource = (zoneName: string, checked: boolean) =>
         setSelectedSources((prev) => (checked ? [...prev.filter((n) => n !== zoneName), zoneName] : prev.filter((n) => n !== zoneName)));
 
+    const setSources = (zoneNames: string[], checked: boolean) =>
+        setSelectedSources((prev) => {
+            const rest = prev.filter((n) => !zoneNames.includes(n));
+            return checked ? [...rest, ...zoneNames] : rest;
+        });
+
     const changeBaseType = (type: string) => {
         setBaseType(type);
         setSelectedSources([]);
+        setSearch('');
     };
 
     const canSave = name.trim().length > 0 && !!baseType && selectedSources.length > 0;
@@ -180,6 +253,72 @@ const CustomZoneBuilderPanel = () => {
     const zoneLabel = (zoneName: string) => translate(`Assets.NAME[${zoneName}]`, zoneName) ?? zoneName;
     const typeLabel = (type: string) => ZONE_TYPE_LABELS[type] ?? type;
     const newZoneLabel = translate(LOC + 'NEW_ZONE', '+ New Zone') ?? '+ New Zone';
+    const otherLabel = translate(LOC + 'OTHER_REGION', 'Other') ?? 'Other';
+
+    const allRows: SourceRow[] = (currentGroup?.zones ?? [])
+        .map((z) => ({ ...z, label: zoneLabel(z.name) }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+    const query = search.trim().toLowerCase();
+    const visibleRows = query
+        ? allRows.filter((r) => r.label.toLowerCase().includes(query) || r.name.toLowerCase().includes(query))
+        : allRows;
+    const visibleNames = visibleRows.map((r) => r.name);
+
+    const regionGroups: RegionGroup[] = [];
+    for (const row of visibleRows) {
+        const key = regionOf(row.label);
+        let group = regionGroups.find((g) => g.key === key);
+        if (!group) regionGroups.push((group = { key, rows: [] }));
+        group.rows.push(row);
+    }
+    regionGroups.sort((a, b) => (a.key === OTHER_GROUP ? 1 : b.key === OTHER_GROUP ? -1 : a.key.localeCompare(b.key)));
+
+    const isExpanded = (key: string) => !!query || (expanded[key] ?? allRows.length <= AUTO_EXPAND_LIMIT);
+    const toggleGroup = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !isExpanded(key) }));
+
+    const renderRow = (row: SourceRow, nested: boolean) => {
+        const checked = selectedSources.includes(row.name);
+        return (
+            <div key={row.name} style={nested ? NESTED_ROW_STYLE : ROW_STYLE}>
+                <div style={ROW_LABEL_STYLE} onClick={() => setSource(row.name, !checked)}>
+                    {row.label}
+                </div>
+                <span style={COUNT_STYLE}>{row.buildings}</span>
+                <Checkbox checked={checked} onChange={(v) => setSource(row.name, v)} />
+            </div>
+        );
+    };
+
+    const renderGroup = (group: RegionGroup) => {
+        const names = group.rows.map((r) => r.name);
+        const selectedCount = names.filter((n) => selectedSources.includes(n)).length;
+        const buildings = group.rows.reduce((sum, r) => sum + r.buildings, 0);
+        const open = isExpanded(group.key);
+        return (
+            <div key={group.key || '__other'}>
+                <div style={GROUP_HEADER_STYLE}>
+                    <div style={GROUP_TITLE_STYLE} onClick={() => toggleGroup(group.key)}>
+                        <div style={chevronStyle(open)} />
+                        <span>{group.key || otherLabel}</span>
+                        <span style={GROUP_COUNT_STYLE}>{`${selectedCount}/${names.length}`}</span>
+                    </div>
+                    <span style={COUNT_STYLE}>{buildings}</span>
+                    <Checkbox checked={selectedCount === names.length} onChange={(v) => setSources(names, v)} />
+                </div>
+                {open && group.rows.map((r) => renderRow(r, true))}
+            </div>
+        );
+    };
+
+    const sourceList =
+        visibleRows.length === 0 ? (
+            <div style={EMPTY_STYLE}>{translate(LOC + 'NO_MATCHES', 'No matching zones.')}</div>
+        ) : regionGroups.length > 1 ? (
+            regionGroups.map(renderGroup)
+        ) : (
+            visibleRows.map((r) => renderRow(r, false))
+        );
 
     const zoneDropdown = (
         <Dropdown
@@ -248,21 +387,26 @@ const CustomZoneBuilderPanel = () => {
                     left={translate(LOC + 'SOURCES', 'Source Zones')}
                     right={`${totalBuildings} ${translate(LOC + 'BUILDINGS', 'Buildings')}`}
                 />
-                <Scrollable style={LIST_STYLE}>
-                    {(currentGroup?.zones ?? []).map((z) => (
-                        <PanelSectionRow
-                            key={z.name}
-                            subRow
-                            left={zoneLabel(z.name)}
-                            right={
-                                <div style={RIGHT_STYLE}>
-                                    <span style={COUNT_STYLE}>{z.buildings}</span>
-                                    <Checkbox checked={selectedSources.includes(z.name)} onChange={(v) => setSource(z.name, v)} />
-                                </div>
-                            }
+                <div style={TOOLBAR_STYLE}>
+                    <div style={SEARCH_STYLE}>
+                        <TextInput
+                            type="text"
+                            value={search}
+                            maxLength={64}
+                            placeholder={translate(LOC + 'SEARCH', 'Search zones...')}
+                            className={textInputTheme?.input}
+                            style={INPUT_STYLE}
+                            onChange={(e: any) => setSearch(e.target.value)}
                         />
-                    ))}
-                </Scrollable>
+                    </div>
+                    <div style={SMALL_BUTTON_STYLE} onClick={() => setSources(visibleNames, true)}>
+                        {translate(LOC + 'SELECT_ALL', 'Select all')}
+                    </div>
+                    <div style={SMALL_BUTTON_STYLE} onClick={() => setSources(visibleNames, false)}>
+                        {translate(LOC + 'CLEAR', 'Clear')}
+                    </div>
+                </div>
+                <Scrollable style={LIST_STYLE}>{sourceList}</Scrollable>
                 {restartRequired && <PanelSectionRow left={translate(LOC + 'RESTART_REQUIRED', 'Restart required for some changes.')} />}
             </PanelSection>
 

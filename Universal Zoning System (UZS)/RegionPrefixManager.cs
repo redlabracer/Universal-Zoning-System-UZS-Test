@@ -61,6 +61,8 @@ namespace UniversalZoningSystem
             if (string.IsNullOrEmpty(prefabName))
                 return "Generic";
 
+            using var profilerScope = Diagnostics.ModProfiler.RegionFromPrefabName.Auto();
+
             var upperName = prefabName.ToUpperInvariant();
 
             foreach (var prefix in KnownPrefixes.Keys)

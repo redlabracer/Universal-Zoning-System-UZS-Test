@@ -8,6 +8,7 @@ using Game.Zones;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+using UniversalZoningSystem.Diagnostics;
 
 namespace UniversalZoningSystem
 {
@@ -70,6 +71,8 @@ namespace UniversalZoningSystem
         /// </summary>
         protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
+            using var profilerScope = ModProfiler.UISystemOnGamePreload.Auto();
+
             base.OnGamePreload(purpose, mode);
             
             Log.Info($"OnGamePreload called: Purpose={purpose}, Mode={mode}");
@@ -83,6 +86,8 @@ namespace UniversalZoningSystem
 
         protected override void OnUpdate()
         {
+            using var profilerScope = ModProfiler.UISystemOnUpdate.Auto();
+
             // Fallback: if OnGamePreload didn't run, try here
             if (!_initialized)
             {
@@ -98,6 +103,8 @@ namespace UniversalZoningSystem
         {
             if (_initialized)
                 return;
+
+            using var profilerScope = ModProfiler.UISystemInitialize.Auto();
 
             try
             {
@@ -138,6 +145,8 @@ namespace UniversalZoningSystem
 
         private void FindTemplateZones()
         {
+            using var profilerScope = ModProfiler.UISystemFindTemplates.Auto();
+
             var zoneEntities = _zoneQuery.ToEntityArray(Allocator.Temp);
             Log.Info($"Searching through {zoneEntities.Length} zone entities for templates...");
 
@@ -180,6 +189,8 @@ namespace UniversalZoningSystem
 
         private void CreateUniversalZoneCategory()
         {
+            using var profilerScope = ModProfiler.UISystemCreateCategory.Auto();
+
             // Find the Zones menu
             Entity zonesMenuEntity = Entity.Null;
             UIAssetMenuPrefab zonesMenuPrefab = null;
@@ -317,6 +328,8 @@ namespace UniversalZoningSystem
             if (_universalZonePack != null)
                 return;
 
+            using var profilerScope = ModProfiler.UISystemCreatePack.Auto();
+
             try
             {
                 if (_prefabSystem.TryGetPrefab(new PrefabID(nameof(AssetPackPrefab), "UZS_RedlabracerPack"), out PrefabBase existingPrefab)
@@ -354,6 +367,8 @@ namespace UniversalZoningSystem
 
         private void CreateUniversalZonePrefabs()
         {
+            using var profilerScope = ModProfiler.UISystemCreateUniversalZones.Auto();
+
             // Check if prefabs already exist
             if (_createdZonePrefabs.Count > 0)
             {
@@ -390,6 +405,8 @@ namespace UniversalZoningSystem
 
         private void CreateCustomZonePrefabs()
         {
+            using var profilerScope = ModProfiler.UISystemCreateCustomZones.Auto();
+
             foreach (var custom in CustomZones.CustomZoneRegistry.Zones)
             {
                 EnsureCustomZonePrefab(custom);
@@ -400,6 +417,8 @@ namespace UniversalZoningSystem
         {
             if (custom == null || string.IsNullOrEmpty(custom.Id))
                 return null;
+
+            using var profilerScope = ModProfiler.UISystemEnsureCustomZone.Auto();
 
             var existing = GetUniversalZonePrefab(custom.Id);
             if (existing != null)
@@ -424,6 +443,8 @@ namespace UniversalZoningSystem
 
         private bool CreateUniversalZonePrefab(UniversalZoneDefinition definition, int priority)
         {
+            using var profilerScope = ModProfiler.UISystemCreateZonePrefab.Auto();
+
             var primaryType = definition.SourceZoneTypes[0];
 
             if (!_templateZones.TryGetValue(primaryType, out var templateZone))
@@ -440,7 +461,11 @@ namespace UniversalZoningSystem
 
             try
             {
-                var universalZone = (ZonePrefab)templateZone.Clone(definition.Id);
+                ZonePrefab universalZone;
+                using (ModProfiler.UISystemCloneZonePrefab.Auto())
+                {
+                    universalZone = (ZonePrefab)templateZone.Clone(definition.Id);
+                }
 
                 // Update the UIObject to use our custom category
                 var uiObject = universalZone.GetComponent<UIObject>();
@@ -489,7 +514,10 @@ namespace UniversalZoningSystem
                 }
 
                 // Register with the prefab system
-                _prefabSystem.AddPrefab(universalZone);
+                using (ModProfiler.UISystemAddZonePrefab.Auto())
+                {
+                    _prefabSystem.AddPrefab(universalZone);
+                }
                 _createdZonePrefabs.Add(universalZone);
 
                 // Get the entity
@@ -497,7 +525,9 @@ namespace UniversalZoningSystem
                 if (entity != Entity.Null)
                 {
                     _universalZoneEntities[definition.Id] = entity;
-                    
+
+                    using var copyZoneDataScope = ModProfiler.UISystemCopyZoneData.Auto();
+
                     // Log template ZoneData
                     if (EntityManager.HasComponent<ZoneData>(templateEntity))
                     {

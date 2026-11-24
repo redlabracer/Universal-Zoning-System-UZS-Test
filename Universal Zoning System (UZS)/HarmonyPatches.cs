@@ -9,6 +9,8 @@ namespace UniversalZoningSystem
         [HarmonyPrefix]
         private static void Prefix(PrefabInitializeSystem __instance)
         {
+            using var profilerScope = Diagnostics.ModProfiler.HarmonyPrefabInitializePrefix.Auto();
+
             if (__instance?.World == null)
                 return;
 
